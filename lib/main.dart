@@ -1,492 +1,1061 @@
-import 'dart:async';
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
-void main() {
-  runApp(const GymDemoApp());
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final config = await AppConfigLoader.load();
+  runApp(GimAccessApp(config: config));
 }
 
-class GymDemoApp extends StatelessWidget {
-  const GymDemoApp({super.key});
+class GimAccessApp extends StatefulWidget {
+  const GimAccessApp({super.key, required this.config});
+
+  final AppConfig config;
+
+  @override
+  State<GimAccessApp> createState() => _GimAccessAppState();
+}
+
+class _GimAccessAppState extends State<GimAccessApp> {
+  late final ApiAuthRepository _authRepository = ApiAuthRepository(
+    config: widget.config,
+  );
+  final LoginAuditStore _auditStore = LoginAuditStore();
+  AuthSession? _session;
+
+  Future<void> _login(String email, String password) async {
+    final session = await _authRepository.authenticate(email, password);
+    _auditStore.record(session.user);
+    setState(() {
+      _session = session;
+    });
+  }
+
+  void _logout() {
+    setState(() {
+      _session = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'EGL Gym Demo',
+      title: widget.config.appName,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7A9B7B)),
+        scaffoldBackgroundColor: const Color(0xFF041611),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF65D190),
+          brightness: Brightness.dark,
+        ),
+        fontFamily: 'Roboto',
       ),
-      home: const HomeShell(),
+      home: _session == null
+          ? LoginPage(
+              config: widget.config,
+              onLogin: _login,
+            )
+          : DashboardRouter(
+              config: widget.config,
+              currentUser: _session!.user,
+              auditStore: _auditStore,
+              backendToken: _session!.token,
+              onLogout: _logout,
+            ),
     );
   }
 }
 
-class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
-
-  @override
-  State<HomeShell> createState() => _HomeShellState();
+enum UserRole {
+  business,
+  gim,
 }
 
-class _HomeShellState extends State<HomeShell> {
-  int _selectedIndex = 0;
+UserRole userRoleFromApi(String value) {
+  switch (value.toLowerCase()) {
+    case 'business':
+      return UserRole.business;
+    case 'gim':
+      return UserRole.gim;
+    default:
+      throw AuthException('Unsupported user role received from the server.');
+  }
+}
 
-  final List<Widget> _pages = const [
-    MapPage(),
-    JournalPage(),
-    EasyAIPage(),
-    ReservePage(),
-  ];
+class AppUser {
+  const AppUser({
+    required this.id,
+    required this.email,
+    required this.displayName,
+    required this.role,
+    required this.lastLogin,
+  });
+
+  final String id;
+  final String email;
+  final String displayName;
+  final UserRole role;
+  final DateTime lastLogin;
+}
+
+class AuthSession {
+  const AuthSession({
+    required this.token,
+    required this.user,
+  });
+
+  final String token;
+  final AppUser user;
+}
+
+class ApiAuthRepository {
+  ApiAuthRepository({required this.config, http.Client? client})
+      : _client = client ?? http.Client();
+
+  final AppConfig config;
+  final http.Client _client;
+
+  Future<AuthSession> authenticate(String email, String password) async {
+    final uri = Uri.parse('${config.baseUrl}/api/auth/login');
+
+    http.Response response;
+    try {
+      response = await _client.post(
+        uri,
+        headers: const {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email.trim(),
+          'password': password,
+        }),
+      );
+    } catch (_) {
+      throw AuthException(
+        'Could not reach the backend at ${config.baseUrl}. Make sure the Express server is running.',
+      );
+    }
+
+    final body = _decodeJson(response.body);
+
+    if (response.statusCode != 200) {
+      throw AuthException(
+        body['message'] as String? ??
+            'Login failed. Check the backend server and credentials.',
+      );
+    }
+
+    final token = body['token'] as String?;
+    final userJson = body['user'] as Map<String, dynamic>?;
+
+    if (token == null || userJson == null) {
+      throw const AuthException(
+        'The backend login response was incomplete.',
+      );
+    }
+
+    return AuthSession(
+      token: token,
+      user: AppUser(
+        id: '${userJson['id']}',
+        email: userJson['email'] as String? ?? email.trim().toLowerCase(),
+        displayName: userJson['displayName'] as String? ?? 'Unknown User',
+        role: userRoleFromApi(userJson['role'] as String? ?? 'gim'),
+        lastLogin: DateTime.now(),
+      ),
+    );
+  }
+
+  Map<String, dynamic> _decodeJson(String source) {
+    if (source.trim().isEmpty) {
+      return <String, dynamic>{};
+    }
+
+    final decoded = jsonDecode(source);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    return <String, dynamic>{};
+  }
+}
+
+class AuthException implements Exception {
+  const AuthException(this.message);
+
+  final String message;
+}
+
+class LoginAuditStore {
+  final List<AppUser> _logins = <AppUser>[];
+
+  void record(AppUser user) {
+    _logins.insert(0, user);
+  }
+
+  List<AppUser> get recentLogins => List<AppUser>.unmodifiable(_logins);
+}
+
+class AppConfig {
+  const AppConfig({
+    required this.appName,
+    required this.apiScheme,
+    required this.apiHost,
+    required this.apiPort,
+    required this.dbName,
+    required this.dbUser,
+    required this.jwtIssuer,
+    required this.businessPortalLabel,
+    required this.gimPortalLabel,
+  });
+
+  final String appName;
+  final String apiScheme;
+  final String apiHost;
+  final String apiPort;
+  final String dbName;
+  final String dbUser;
+  final String jwtIssuer;
+  final String businessPortalLabel;
+  final String gimPortalLabel;
+
+  String get baseUrl => '$apiScheme://$apiHost:$apiPort';
+}
+
+class AppConfigLoader {
+  static Future<AppConfig> load() async {
+    final envText = await _loadEnvFile();
+    final values = _parse(envText);
+    return AppConfig(
+      appName: values['APP_NAME'] ?? 'GIM Access',
+      apiScheme: values['API_SCHEME'] ?? 'http',
+      apiHost: values['API_HOST'] ?? 'localhost',
+      apiPort: values['API_PORT'] ?? '3000',
+      dbName: values['DB_NAME'] ?? 'gim_access',
+      dbUser: values['DB_USER'] ?? 'app_user',
+      jwtIssuer: values['JWT_ISSUER'] ?? 'gim-backend',
+      businessPortalLabel:
+          values['BUSINESS_PORTAL_LABEL'] ?? 'Business Dashboard',
+      gimPortalLabel: values['GIM_PORTAL_LABEL'] ?? 'GIM User Dashboard',
+    );
+  }
+
+  static Future<String> _loadEnvFile() async {
+    try {
+      return await rootBundle.loadString('assets/config/app.env');
+    } on FlutterError {
+      return rootBundle.loadString('assets/config/app.env.example');
+    }
+  }
+
+  static Map<String, String> _parse(String raw) {
+    final result = <String, String>{};
+    for (final line in raw.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty || trimmed.startsWith('#') || !trimmed.contains('=')) {
+        continue;
+      }
+
+      final separator = trimmed.indexOf('=');
+      final key = trimmed.substring(0, separator).trim();
+      final value = trimmed.substring(separator + 1).trim();
+      result[key] = value;
+    }
+    return result;
+  }
+}
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({
+    super.key,
+    required this.config,
+    required this.onLogin,
+  });
+
+  final AppConfig config;
+  final Future<void> Function(String email, String password) onLogin;
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorText = null;
+    });
+
+    try {
+      await widget.onLogin(
+        _emailController.text,
+        _passwordController.text,
+      );
+    } on AuthException catch (error) {
+      setState(() {
+        _errorText = error.message;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showCreateAccountDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF102A22),
+        title: const Text('Account onboarding'),
+        content: const Text(
+          'The next production step would be a backend signup or business onboarding flow handled by the Express API.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          _pages[_selectedIndex],
-
-          /// Global EGL logo shown on every page
-          SafeArea(
-            child: IgnorePointer(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16, top: 12),
-                child: Image.asset(
-                  'assets/egl_logo.png',
-                  width: 74,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xFF03120F),
+              Color(0xFF08231C),
+              Color(0xFF041611),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Container(
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D3835).withValues(alpha: 0.95),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFF5D7369)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x44000000),
+                        blurRadius: 30,
+                        offset: Offset(0, 20),
+                      ),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.config.appName,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: const Color(0xFFC9FFD8),
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Flutter handles the interface. Express handles login, JWTs, and data.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                color: const Color(0xFF72DD98),
+                              ),
+                        ),
+                        const SizedBox(height: 28),
+                        const _FieldLabel(text: 'Email'),
+                        const SizedBox(height: 8),
+                        _StyledInput(
+                          controller: _emailController,
+                          hintText: 'member@gimlife.app',
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Enter an email address.';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Enter a valid email address.';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        const _FieldLabel(text: 'Password'),
+                        const SizedBox(height: 8),
+                        _StyledInput(
+                          controller: _passwordController,
+                          hintText: 'Enter your password',
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Enter your password.';
+                            }
+                            return null;
+                          },
+                        ),
+                        if (_errorText != null) ...[
+                          const SizedBox(height: 14),
+                          Text(
+                            _errorText!,
+                            style: const TextStyle(
+                              color: Color(0xFFFFA9A9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        FilledButton(
+                          onPressed: _isLoading ? null : _submit,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF5BC47F),
+                            foregroundColor: const Color(0xFF052013),
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Text('Log In'),
+                        ),
+                        const SizedBox(height: 14),
+                        OutlinedButton(
+                          onPressed: _showCreateAccountDialog,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFFC9FFD8),
+                            side: const BorderSide(color: Color(0xFFC9FFD8)),
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 17,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: const Text('Create Account'),
+                        ),
+                        const SizedBox(height: 24),
+                        _ConfigPanel(config: widget.config),
+                        const SizedBox(height: 20),
+                        const _DemoAccountPanel(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-        ],
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Map'),
-          NavigationDestination(icon: Icon(Icons.book_outlined), label: 'Journal'),
-          NavigationDestination(icon: Icon(Icons.smart_toy_outlined), label: 'EasyAI'),
-          NavigationDestination(icon: Icon(Icons.lock_outline), label: 'Reserve'),
+    );
+  }
+}
+
+class DashboardRouter extends StatelessWidget {
+  const DashboardRouter({
+    super.key,
+    required this.config,
+    required this.currentUser,
+    required this.auditStore,
+    required this.backendToken,
+    required this.onLogout,
+  });
+
+  final AppConfig config;
+  final AppUser currentUser;
+  final LoginAuditStore auditStore;
+  final String backendToken;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    if (currentUser.role == UserRole.business) {
+      return BusinessDashboard(
+        config: config,
+        currentUser: currentUser,
+        auditStore: auditStore,
+        backendToken: backendToken,
+        onLogout: onLogout,
+      );
+    }
+
+    return GimUserDashboard(
+      config: config,
+      currentUser: currentUser,
+      auditStore: auditStore,
+      backendToken: backendToken,
+      onLogout: onLogout,
+    );
+  }
+}
+
+class BusinessDashboard extends StatelessWidget {
+  const BusinessDashboard({
+    super.key,
+    required this.config,
+    required this.currentUser,
+    required this.auditStore,
+    required this.backendToken,
+    required this.onLogout,
+  });
+
+  final AppConfig config;
+  final AppUser currentUser;
+  final LoginAuditStore auditStore;
+  final String backendToken;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DashboardFrame(
+      title: config.businessPortalLabel,
+      subtitle: 'Registered business users land here for operational visibility.',
+      accent: const Color(0xFF7BE6A5),
+      currentUser: currentUser,
+      config: config,
+      backendToken: backendToken,
+      onLogout: onLogout,
+      children: [
+        const _MetricCard(
+          title: 'Active Locations',
+          value: '12',
+          detail: 'Pull this from backend business analytics next.',
+        ),
+        const _MetricCard(
+          title: 'Member Check-Ins',
+          value: '248',
+          detail: 'This is where server-side usage metrics would appear.',
+        ),
+        const _MetricCard(
+          title: 'Vision Alerts',
+          value: '03',
+          detail: 'Camera/vision events should be processed and stored on the server.',
+        ),
+        _LoginAuditCard(logins: auditStore.recentLogins),
+      ],
+    );
+  }
+}
+
+class GimUserDashboard extends StatelessWidget {
+  const GimUserDashboard({
+    super.key,
+    required this.config,
+    required this.currentUser,
+    required this.auditStore,
+    required this.backendToken,
+    required this.onLogout,
+  });
+
+  final AppConfig config;
+  final AppUser currentUser;
+  final LoginAuditStore auditStore;
+  final String backendToken;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return _DashboardFrame(
+      title: config.gimPortalLabel,
+      subtitle: 'General GIM users are routed here after authentication.',
+      accent: const Color(0xFF8FD8FF),
+      currentUser: currentUser,
+      config: config,
+      backendToken: backendToken,
+      onLogout: onLogout,
+      children: [
+        const _MetricCard(
+          title: 'Today\'s Plan',
+          value: 'Strength',
+          detail: 'A future workout service can feed this from the backend.',
+        ),
+        const _MetricCard(
+          title: 'Check-In Status',
+          value: 'Ready',
+          detail: 'QR or access state should be delivered by the API.',
+        ),
+        const _MetricCard(
+          title: 'Graphics Feed',
+          value: 'Live',
+          detail: 'Flutter can render charts from data collected and stored by Node.',
+        ),
+        _LoginAuditCard(logins: auditStore.recentLogins),
+      ],
+    );
+  }
+}
+
+class _DashboardFrame extends StatelessWidget {
+  const _DashboardFrame({
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.currentUser,
+    required this.config,
+    required this.backendToken,
+    required this.onLogout,
+    required this.children,
+  });
+
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final AppUser currentUser;
+  final AppConfig config;
+  final String backendToken;
+  final VoidCallback onLogout;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              accent.withValues(alpha: 0.14),
+              const Color(0xFF041611),
+              const Color(0xFF071C17),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1080),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      runSpacing: 16,
+                      spacing: 16,
+                      children: [
+                        SizedBox(
+                          width: 620,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineLarge
+                                    ?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                subtitle,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(color: const Color(0xFFB8D1C6)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: onLogout,
+                          icon: const Icon(Icons.logout_rounded),
+                          label: const Text('Log out'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        _ProfileCard(
+                          currentUser: currentUser,
+                          accent: accent,
+                        ),
+                        _ServerCard(
+                          config: config,
+                          backendToken: backendToken,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: GridView.count(
+                        crossAxisCount:
+                            MediaQuery.of(context).size.width > 900 ? 2 : 1,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 1.8,
+                        children: children,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.detail,
+  });
+
+  final String title;
+  final String value;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: _panelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: const Color(0xFF97B6A9),
+                ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            detail,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: const Color(0xFFCADED3),
+                ),
+          ),
         ],
       ),
     );
   }
 }
 
-/* ===========================
-   DATA MODELS + TEST DATA
-   =========================== */
+class _LoginAuditCard extends StatelessWidget {
+  const _LoginAuditCard({required this.logins});
 
-class UsageLog {
-  final String logId;
-  final String sensorId;
-  final String equipmentId;
-  final DateTime startTime;
-  final DateTime endTime;
-  final int totalMin;
-  final double intensityScore;
-  final String machineStatus;
-
-  const UsageLog({
-    required this.logId,
-    required this.sensorId,
-    required this.equipmentId,
-    required this.startTime,
-    required this.endTime,
-    required this.totalMin,
-    required this.intensityScore,
-    required this.machineStatus,
-  });
-}
-
-enum ZoneStatus {
-  available,
-  moderate,
-  busy,
-  maintenance,
-}
-
-Color zoneColor(ZoneStatus status) {
-  switch (status) {
-    case ZoneStatus.available:
-      return const Color(0xFF4CAF50);
-    case ZoneStatus.moderate:
-      return const Color(0xFFF4C542);
-    case ZoneStatus.busy:
-      return const Color(0xFFE74C3C);
-    case ZoneStatus.maintenance:
-      return const Color(0xFF9E9E9E);
-  }
-}
-
-String zoneLabel(ZoneStatus status) {
-  switch (status) {
-    case ZoneStatus.available:
-      return 'Available';
-    case ZoneStatus.moderate:
-      return 'Moderate';
-    case ZoneStatus.busy:
-      return 'Busy';
-    case ZoneStatus.maintenance:
-      return 'Maintenance';
-  }
-}
-
-final List<UsageLog> sampleLogs = [
-  UsageLog(
-    logId: '100505',
-    sensorId: 'WIP1001',
-    equipmentId: 'PTRM1001',
-    startTime: DateTime(2026, 4, 14, 7, 15),
-    endTime: DateTime(2026, 4, 14, 7, 55),
-    totalMin: 40,
-    intensityScore: 0.60,
-    machineStatus: 'Running',
-  ),
-  UsageLog(
-    logId: '100506',
-    sensorId: 'WIP1002',
-    equipmentId: 'PTRM1002',
-    startTime: DateTime(2026, 4, 14, 8, 30),
-    endTime: DateTime(2026, 4, 14, 9, 15),
-    totalMin: 45,
-    intensityScore: 0.82,
-    machineStatus: 'Running',
-  ),
-  UsageLog(
-    logId: '100507',
-    sensorId: 'WIP1003',
-    equipmentId: 'PTRM1003',
-    startTime: DateTime(2026, 4, 14, 9, 45),
-    endTime: DateTime(2026, 4, 14, 10, 30),
-    totalMin: 45,
-    intensityScore: 0.47,
-    machineStatus: 'Running',
-  ),
-  UsageLog(
-    logId: '100424',
-    sensorId: 'WIP1004',
-    equipmentId: 'PTRM1004',
-    startTime: DateTime(2026, 4, 2, 11, 0),
-    endTime: DateTime(2026, 4, 2, 11, 45),
-    totalMin: 45,
-    intensityScore: 0.0,
-    machineStatus: 'Maintenance',
-  ),
-  UsageLog(
-    logId: '100425',
-    sensorId: 'WIP1005',
-    equipmentId: 'PTRM1005',
-    startTime: DateTime(2026, 4, 2, 12, 15),
-    endTime: DateTime(2026, 4, 2, 13, 0),
-    totalMin: 45,
-    intensityScore: 0.0,
-    machineStatus: 'Maintenance',
-  ),
-  UsageLog(
-    logId: '100426',
-    sensorId: 'WIP1006',
-    equipmentId: 'PTRM1006',
-    startTime: DateTime(2026, 4, 2, 13, 30),
-    endTime: DateTime(2026, 4, 2, 14, 10),
-    totalMin: 40,
-    intensityScore: 0.68,
-    machineStatus: 'Running',
-  ),
-  UsageLog(
-    logId: '100427',
-    sensorId: 'WIP1007',
-    equipmentId: 'PTRM1007',
-    startTime: DateTime(2026, 4, 2, 14, 45),
-    endTime: DateTime(2026, 4, 2, 15, 30),
-    totalMin: 45,
-    intensityScore: 0.94,
-    machineStatus: 'Running',
-  ),
-];
-
-final Map<String, String> equipmentToZone = {
-  'PTRM1001': 'Treadmills A',
-  'PTRM1002': 'Treadmills B',
-  'PTRM1003': 'Ellipticals',
-  'PTRM1004': 'Leg Press',
-  'PTRM1005': 'Chest Press',
-  'PTRM1006': 'Free Weights',
-  'PTRM1007': 'Benches',
-};
-
-ZoneStatus statusFromLog(UsageLog log) {
-  if (log.machineStatus.toLowerCase() == 'maintenance') {
-    return ZoneStatus.maintenance;
-  }
-  if (log.intensityScore >= 0.75) {
-    return ZoneStatus.busy;
-  }
-  if (log.intensityScore >= 0.50) {
-    return ZoneStatus.moderate;
-  }
-  return ZoneStatus.available;
-}
-
-/* ===========================
-   SHARED HEADER
-   =========================== */
-
-class TopLeftHeader extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData trailingIcon;
-
-  const TopLeftHeader({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.trailingIcon,
-  });
+  final List<AppUser> logins;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(104, 12, 16, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.94),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 12,
-                      offset: Offset(0, 6),
-                    ),
-                  ],
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: _panelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recent Login Activity',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
                 ),
+          ),
+          const SizedBox(height: 12),
+          if (logins.isEmpty)
+            const Text('No logins recorded yet.')
+          else
+            Expanded(
+              child: ListView.separated(
+                itemCount: logins.length > 6 ? 6 : logins.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(color: Color(0xFF29483E)),
+                itemBuilder: (context, index) {
+                  final login = logins[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      login.email,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      '${login.role == UserRole.business ? 'Business' : 'GIM user'} • ${_formatTimestamp(login.lastLogin)}',
+                      style: const TextStyle(color: Color(0xFF9DB8AE)),
+                    ),
+                    trailing: Icon(
+                      login.role == UserRole.business
+                          ? Icons.apartment_rounded
+                          : Icons.person_rounded,
+                      color: const Color(0xFF6FD694),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({
+    required this.currentUser,
+    required this.accent,
+  });
+
+  final AppUser currentUser;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final roleText = currentUser.role == UserRole.business
+        ? 'Business Account'
+        : 'GIM Member';
+
+    return Container(
+      width: 360,
+      padding: const EdgeInsets.all(20),
+      decoration: _panelDecoration(borderColor: accent.withValues(alpha: 0.55)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: accent.withValues(alpha: 0.2),
+                child: Icon(
+                  currentUser.role == UserRole.business
+                      ? Icons.storefront_rounded
+                      : Icons.person_rounded,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      currentUser.displayName,
                       style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
-                      subtitle,
-                      style: const TextStyle(color: Colors.black54),
+                      roleText,
+                      style: TextStyle(
+                        color: accent,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            currentUser.email,
+            style: const TextStyle(
+              color: Color(0xFFCAE0D7),
+              fontSize: 15,
             ),
-            const SizedBox(width: 10),
-            CircleAvatar(
-              backgroundColor: Colors.white,
-              radius: 24,
-              child: Icon(trailingIcon, color: Colors.black54),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Last authenticated at ${_formatTimestamp(currentUser.lastLogin)}',
+            style: const TextStyle(
+              color: Color(0xFF97B6A9),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class GlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsets padding;
-
-  const GlassCard({
-    super.key,
-    required this.child,
-    this.padding = const EdgeInsets.all(14),
+class _ServerCard extends StatelessWidget {
+  const _ServerCard({
+    required this.config,
+    required this.backendToken,
   });
+
+  final AppConfig config;
+  final String backendToken;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokenPreview = backendToken.length > 18
+        ? '${backendToken.substring(0, 18)}...'
+        : backendToken;
+
+    return Container(
+      width: 420,
+      padding: const EdgeInsets.all(20),
+      decoration: _panelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Backend Configuration',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          const SizedBox(height: 14),
+          _ConfigRow(label: 'Base URL', value: config.baseUrl),
+          _ConfigRow(label: 'Database', value: config.dbName),
+          _ConfigRow(label: 'DB User', value: config.dbUser),
+          _ConfigRow(label: 'JWT Issuer', value: config.jwtIssuer),
+          _ConfigRow(label: 'JWT Token', value: tokenPreview),
+          const SizedBox(height: 10),
+          const Text(
+            'For production, keep camera data processing and analytics on the server, then let Flutter render charts, dashboards, and alerts from API responses.',
+            style: TextStyle(
+              color: Color(0xFF97B6A9),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfigPanel extends StatelessWidget {
+  const _ConfigPanel({required this.config});
+
+  final AppConfig config;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: padding,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.94),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 14, offset: Offset(0, 8)),
+        color: const Color(0xFF24302C),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF42564E)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Configured server',
+            style: TextStyle(
+              color: Color(0xFFC9FFD8),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _ConfigRow(label: 'Endpoint', value: config.baseUrl),
+          _ConfigRow(label: 'Database', value: '${config.dbName} (${config.dbUser})'),
+          _ConfigRow(label: 'Issuer', value: config.jwtIssuer),
         ],
       ),
-      child: child,
     );
   }
 }
 
-/* ===========================
-   MAP PAGE
-   =========================== */
-
-class MapPage extends StatelessWidget {
-  const MapPage({super.key});
+class _DemoAccountPanel extends StatelessWidget {
+  const _DemoAccountPanel();
 
   @override
   Widget build(BuildContext context) {
-    final zoneEntries = sampleLogs.map((log) {
-      return MapEntry(equipmentToZone[log.equipmentId] ?? log.equipmentId, log);
-    }).toList();
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F4),
-      body: Stack(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B2623),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF355048)),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned.fill(
-            child: Container(color: const Color(0xFFF6F6F4)),
-          ),
-          const TopLeftHeader(
-            title: 'Crunch Fitness',
-            subtitle: 'Tempe, AZ · 1.2 mi',
-            trailingIcon: Icons.access_time,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 120, 16, 16),
-            child: Column(
-              children: [
-                Expanded(
-                  child: GlassCard(
-                    padding: const EdgeInsets.all(18),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          left: 8,
-                          top: 8,
-                          child: Text(
-                            'Temporary Gym Layout Demo',
-                            style: TextStyle(
-                              color: Colors.black.withOpacity(0.6),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        _ZoneBox(
-                          left: 10,
-                          top: 45,
-                          width: 120,
-                          height: 85,
-                          label: 'Free Weights',
-                          status: ZoneStatus.moderate,
-                        ),
-                        _ZoneBox(
-                          left: 155,
-                          top: 45,
-                          width: 130,
-                          height: 85,
-                          label: 'Selector Machines',
-                          status: ZoneStatus.available,
-                        ),
-                        _ZoneBox(
-                          left: 25,
-                          top: 165,
-                          width: 120,
-                          height: 95,
-                          label: 'Benches',
-                          status: ZoneStatus.busy,
-                        ),
-                        _ZoneBox(
-                          left: 170,
-                          top: 170,
-                          width: 135,
-                          height: 80,
-                          label: 'Treadmills A',
-                          status: statusFromLog(sampleLogs[0]),
-                        ),
-                        _ZoneBox(
-                          left: 170,
-                          top: 270,
-                          width: 135,
-                          height: 80,
-                          label: 'Treadmills B',
-                          status: statusFromLog(sampleLogs[1]),
-                        ),
-                        _ZoneBox(
-                          left: 20,
-                          top: 285,
-                          width: 125,
-                          height: 70,
-                          label: 'Ellipticals',
-                          status: statusFromLog(sampleLogs[2]),
-                        ),
-                        _ZoneBox(
-                          left: 320,
-                          top: 175,
-                          width: 95,
-                          height: 72,
-                          label: 'Leg Press',
-                          status: statusFromLog(sampleLogs[3]),
-                        ),
-                        _ZoneBox(
-                          left: 320,
-                          top: 270,
-                          width: 95,
-                          height: 72,
-                          label: 'Chest Press',
-                          status: statusFromLog(sampleLogs[4]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                GlassCard(
-                  child: Column(
-                    children: [
-                      Row(
-                        children: const [
-                          Icon(Icons.location_on, color: Color(0xFF4CAF50)),
-                          SizedBox(width: 6),
-                          Text('Available'),
-                          SizedBox(width: 16),
-                          Icon(Icons.location_on, color: Color(0xFFF4C542)),
-                          SizedBox(width: 6),
-                          Text('Moderate'),
-                          SizedBox(width: 16),
-                          Icon(Icons.location_on, color: Color(0xFFE74C3C)),
-                          SizedBox(width: 6),
-                          Text('Busy'),
-                          SizedBox(width: 16),
-                          Icon(Icons.location_on, color: Color(0xFF9E9E9E)),
-                          SizedBox(width: 6),
-                          Text('Maintenance'),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton(
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  showDragHandle: true,
-                                  builder: (_) => _DataPreviewSheet(entries: zoneEntries),
-                                );
-                              },
-                              child: const Text('View Live Demo Data'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          Text(
+            'Public demo accounts',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
             ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Business demo: owner@iron-temple.com / Business123!',
+            style: TextStyle(color: Color(0xFFCAE0D7)),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'General demo: member@gimlife.app / GimUser123!',
+            style: TextStyle(color: Color(0xFFCAE0D7)),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'These are public demo-only app credentials. Do not reuse them in real environments.',
+            style: TextStyle(color: Color(0xFF97B6A9)),
           ),
         ],
       ),
@@ -494,337 +1063,100 @@ class MapPage extends StatelessWidget {
   }
 }
 
-class _ZoneBox extends StatelessWidget {
-  final double left;
-  final double top;
-  final double width;
-  final double height;
-  final String label;
-  final ZoneStatus status;
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.text});
 
-  const _ZoneBox({
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.height,
-    required this.label,
-    required this.status,
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Color(0xFFC9FFD8),
+        fontWeight: FontWeight.w700,
+        fontSize: 18,
+      ),
+    );
+  }
+}
+
+class _StyledInput extends StatelessWidget {
+  const _StyledInput({
+    required this.controller,
+    required this.hintText,
+    required this.validator,
+    this.keyboardType,
+    this.obscureText = false,
   });
 
+  final TextEditingController controller;
+  final String hintText;
+  final String? Function(String?) validator;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: left,
-      top: top,
-      child: Column(
-        children: [
-          Icon(Icons.location_on, color: zoneColor(status), size: 34),
-          Container(
-            width: width,
-            height: height,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.grey.shade400),
-            ),
-            child: Center(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ],
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        hintText: hintText,
+        filled: true,
+        fillColor: const Color(0xFFDDE7F4),
+        hintStyle: const TextStyle(color: Color(0xFF5C6878)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        errorStyle: const TextStyle(fontWeight: FontWeight.w600),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      ),
+      style: const TextStyle(
+        color: Color(0xFF13202E),
+        fontWeight: FontWeight.w600,
       ),
     );
   }
 }
 
-class _DataPreviewSheet extends StatelessWidget {
-  final List<MapEntry<String, UsageLog>> entries;
+class _ConfigRow extends StatelessWidget {
+  const _ConfigRow({
+    required this.label,
+    required this.value,
+  });
 
-  const _DataPreviewSheet({required this.entries});
+  final String label;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Embedded Test Data Preview',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Using sample rows from your teammate’s Sheet 2 usage logs.',
-              style: TextStyle(color: Colors.black54),
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...entries.take(7).map(
-            (entry) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.circle, size: 12, color: zoneColor(statusFromLog(entry.value))),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '${entry.key} • ${entry.value.machineStatus} • intensity ${entry.value.intensityScore.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* ===========================
-   JOURNAL PAGE
-   =========================== */
-
-class JournalPage extends StatefulWidget {
-  const JournalPage({super.key});
-
-  @override
-  State<JournalPage> createState() => _JournalPageState();
-}
-
-class _JournalPageState extends State<JournalPage> {
-  int selectedDay = 1;
-
-  final List<Map<String, dynamic>> days = [
-    {'day': 'Mon', 'type': 'Push'},
-    {'day': 'Tue', 'type': 'Pull'},
-    {'day': 'Wed', 'type': 'Legs'},
-    {'day': 'Thu', 'type': 'Arms'},
-    {'day': 'Fri', 'type': 'Upper'},
-    {'day': 'Sat', 'type': 'Lower'},
-    {'day': 'Sun', 'type': 'Rest'},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F4),
-      body: Stack(
-        children: [
-          const TopLeftHeader(
-            title: 'Workout Journal',
-            subtitle: 'Track your training plan',
-            trailingIcon: Icons.calendar_month,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 120, 16, 16),
-            child: Column(
-              children: [
-                GlassCard(
-                  child: SizedBox(
-                    height: 82,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: days.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, index) {
-                        final isSelected = selectedDay == index;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedDay = index;
-                            });
-                          },
-                          child: Container(
-                            width: 88,
-                            decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFF7A9B7B) : Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            padding: const EdgeInsets.all(10),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  days[index]['day'],
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: isSelected ? Colors.white : Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  days[index]['type'],
-                                  style: TextStyle(
-                                    color: isSelected ? Colors.white70 : Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: GlassCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${days[selectedDay]['type']} Day',
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 10),
-                        const _WorkoutRow(name: 'Bench Press', sets: '4', reps: '8'),
-                        const _WorkoutRow(name: 'Incline Dumbbell Press', sets: '3', reps: '10'),
-                        const _WorkoutRow(name: 'Cable Fly', sets: '3', reps: '12'),
-                        const _WorkoutRow(name: 'Tricep Pushdown', sets: '3', reps: '12'),
-                        const Spacer(),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: FilledButton.icon(
-                                onPressed: () {},
-                                icon: const Icon(Icons.add),
-                                label: const Text('Add Workout'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WorkoutRow extends StatelessWidget {
-  final String name;
-  final String sets;
-  final String reps;
-
-  const _WorkoutRow({
-    required this.name,
-    required this.sets,
-    required this.reps,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(14),
-      ),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(
+            width: 88,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                color: Color(0xFF97B6A9),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           Expanded(
-            child: Text(name, style: const TextStyle(fontWeight: FontWeight.w800)),
-          ),
-          Text('$sets sets • $reps reps'),
-        ],
-      ),
-    );
-  }
-}
-
-/* ===========================
-   EASY AI PAGE
-   =========================== */
-
-class EasyAIPage extends StatelessWidget {
-  const EasyAIPage({super.key});
-
-  void _showResponse(BuildContext context, String prompt) {
-    showModalBottomSheet(
-      context: context,
-      showDragHandle: true,
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              prompt,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Demo AI Response:\n\n'
-              'Based on current test usage, Treadmills B and Benches are seeing heavy usage.\n'
-              'Ellipticals look more open right now.\n'
-              'Machines in maintenance are temporarily unavailable.',
-              style: TextStyle(height: 1.4),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final prompts = [
-      'What is open right now?',
-      'What should I do while I wait?',
-      'What is the best workout for me today?',
-      'What machine should I avoid right now?',
-    ];
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F4),
-      body: Stack(
-        children: [
-          const TopLeftHeader(
-            title: 'EasyAI',
-            subtitle: 'Ask fast questions about the gym',
-            trailingIcon: Icons.smart_toy,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 120, 16, 16),
-            child: ListView.separated(
-              itemCount: prompts.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return GlassCard(
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      prompts[index],
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => _showResponse(context, prompts[index]),
-                  ),
-                );
-              },
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -833,139 +1165,21 @@ class EasyAIPage extends StatelessWidget {
   }
 }
 
-/* ===========================
-   RESERVE PAGE
-   =========================== */
-
-class ReservePage extends StatefulWidget {
-  const ReservePage({super.key});
-
-  @override
-  State<ReservePage> createState() => _ReservePageState();
+BoxDecoration _panelDecoration({Color borderColor = const Color(0xFF29483E)}) {
+  return BoxDecoration(
+    color: const Color(0xFF10211C),
+    borderRadius: BorderRadius.circular(22),
+    border: Border.all(color: borderColor),
+  );
 }
 
-class _ReservePageState extends State<ReservePage> {
-  Timer? timer;
-  int reservedSeconds = 0;
-  String reservedMachine = '';
-
-  final List<Map<String, String>> machines = [
-    {'name': 'Bench Press #2', 'zone': 'Benches'},
-    {'name': 'Treadmill #4', 'zone': 'Treadmills B'},
-    {'name': 'Elliptical #1', 'zone': 'Ellipticals'},
-    {'name': 'Cable Station', 'zone': 'Selector Machines'},
-  ];
-
-  void reserveMachine(String machine) {
-    setState(() {
-      reservedMachine = machine;
-      reservedSeconds = 180;
-    });
-
-    timer?.cancel();
-    timer = Timer.periodic(const Duration(seconds: 1), (t) {
-      if (reservedSeconds <= 1) {
-        t.cancel();
-        setState(() {
-          reservedSeconds = 0;
-          reservedMachine = '';
-        });
-      } else {
-        setState(() {
-          reservedSeconds--;
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F6F4),
-      body: Stack(
-        children: [
-          const TopLeftHeader(
-            title: 'Reserve',
-            subtitle: 'Hold a machine for a short time',
-            trailingIcon: Icons.lock_clock,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 120, 16, 16),
-            child: Column(
-              children: [
-                GlassCard(
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          reservedSeconds > 0
-                              ? 'You reserved $reservedMachine • $reservedSeconds seconds left'
-                              : 'Reserve concept demo: tap a machine and simulate a 3-minute hold.',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: machines.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final machine = machines[index];
-                      final isReserved =
-                          reservedMachine == machine['name'] &&
-                          reservedSeconds > 0;
-
-                      return GlassCard(
-                        child: Row(
-                          children: [
-                            const Icon(Icons.fitness_center),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    machine['name']!,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  Text(
-                                    machine['zone']!,
-                                    style: const TextStyle(
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            FilledButton(
-                              onPressed: isReserved
-                                  ? null
-                                  : () => reserveMachine(machine['name']!),
-                              child: Text(isReserved ? 'Held' : 'Reserve'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+String _formatTimestamp(DateTime timestamp) {
+  final hour = timestamp.hour > 12
+      ? timestamp.hour - 12
+      : timestamp.hour == 0
+          ? 12
+          : timestamp.hour;
+  final minute = timestamp.minute.toString().padLeft(2, '0');
+  final period = timestamp.hour >= 12 ? 'PM' : 'AM';
+  return '${timestamp.month}/${timestamp.day}/${timestamp.year} $hour:$minute $period';
 }

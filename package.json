@@ -1,0 +1,23 @@
+{
+  "name": "all-easy-gym-life",
+  "private": true,
+  "workspaces": [
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n backend,frontend \"npm run backend:dev\" \"npm run flutter:web\"",
+    "dev:backend": "npm run backend:dev",
+    "dev:frontend": "npm run flutter:web",
+    "dev:chrome-dev": "concurrently -k -n backend,frontend \"npm run backend:dev\" \"npm run flutter:chrome-dev\"",
+    "install:backend": "npm install --workspace backend",
+    "backend:dev": "npm run dev --workspace backend",
+    "backend:start": "npm run start --workspace backend",
+    "backend:seed": "npm run seed:demo --workspace backend",
+    "flutter:run": "flutter run",
+    "flutter:web": "flutter run -d web-server --web-hostname localhost --web-port 8080",
+    "flutter:chrome-dev": "CHROME_EXECUTABLE=\"/Applications/Google Chrome Dev.app/Contents/MacOS/Google Chrome Dev\" flutter run -d chrome --web-port 8080"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

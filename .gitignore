@@ -32,6 +32,11 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+assets/config/app.env
+node_modules/
+backend/.env
+backend/node_modules/
+TECHNICAL_KNOWLEDGE.md
 
 # Symbolication related
 app.*.symbols
