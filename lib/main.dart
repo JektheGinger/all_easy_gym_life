@@ -40,6 +40,42 @@ class _GimAccessAppState extends State<GimAccessApp> {
     });
   }
 
+  void _enterGeneralDemo() {
+    final demoUser = AppUser(
+      id: 'demo-gim-user',
+      email: 'member@easygymlife.app',
+      displayName: 'General Demo User',
+      role: UserRole.gim,
+      lastLogin: DateTime.now(),
+    );
+
+    _auditStore.record(demoUser);
+    setState(() {
+      _session = AuthSession(
+        token: 'demo-general-dashboard-token',
+        user: demoUser,
+      );
+    });
+  }
+
+  void _enterBusinessDemo() {
+    final demoUser = AppUser(
+      id: 'demo-business-user',
+      email: 'owner@iron-temple.com',
+      displayName: 'Business Demo User',
+      role: UserRole.business,
+      lastLogin: DateTime.now(),
+    );
+
+    _auditStore.record(demoUser);
+    setState(() {
+      _session = AuthSession(
+        token: 'demo-business-dashboard-token',
+        user: demoUser,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -58,6 +94,8 @@ class _GimAccessAppState extends State<GimAccessApp> {
           ? LoginPage(
               config: widget.config,
               onLogin: _login,
+              onEnterBusinessDemo: _enterBusinessDemo,
+              onEnterGeneralDemo: _enterGeneralDemo,
             )
           : DashboardRouter(
               config: widget.config,
@@ -230,16 +268,16 @@ class AppConfigLoader {
     final envText = await _loadEnvFile();
     final values = _parse(envText);
     return AppConfig(
-      appName: values['APP_NAME'] ?? 'GIM Access',
+      appName: values['APP_NAME'] ?? 'Easy Gym Life',
       apiScheme: values['API_SCHEME'] ?? 'http',
       apiHost: values['API_HOST'] ?? 'localhost',
       apiPort: values['API_PORT'] ?? '3000',
-      dbName: values['DB_NAME'] ?? 'gim_access',
+      dbName: values['DB_NAME'] ?? 'easy_gym_life',
       dbUser: values['DB_USER'] ?? 'app_user',
       jwtIssuer: values['JWT_ISSUER'] ?? 'gim-backend',
       businessPortalLabel:
           values['BUSINESS_PORTAL_LABEL'] ?? 'Business Dashboard',
-      gimPortalLabel: values['GIM_PORTAL_LABEL'] ?? 'GIM User Dashboard',
+      gimPortalLabel: values['GIM_PORTAL_LABEL'] ?? 'Easy Gym Life Member Dashboard',
     );
   }
 
@@ -273,10 +311,14 @@ class LoginPage extends StatefulWidget {
     super.key,
     required this.config,
     required this.onLogin,
+    required this.onEnterBusinessDemo,
+    required this.onEnterGeneralDemo,
   });
 
   final AppConfig config;
   final Future<void> Function(String email, String password) onLogin;
+  final VoidCallback onEnterBusinessDemo;
+  final VoidCallback onEnterGeneralDemo;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -405,7 +447,7 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 8),
                         _StyledInput(
                           controller: _emailController,
-                          hintText: 'member@gimlife.app',
+                          hintText: 'member@easygymlife.app',
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
@@ -481,6 +523,45 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           child: const Text('Create Account'),
                         ),
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed:
+                              _isLoading ? null : widget.onEnterBusinessDemo,
+                          icon: const Icon(Icons.storefront_rounded),
+                          label: const Text('Enter Business Demo Dashboard'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF8BF0B4),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed:
+                              _isLoading ? null : widget.onEnterGeneralDemo,
+                          icon: const Icon(Icons.calendar_month_rounded),
+                          label: const Text('Enter Member Demo Dashboard'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF9EE4FF),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Use the demo dashboard buttons when backend authentication is still being set up and you need to preview the business or member experience.',
+                          textAlign: TextAlign.center,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: const Color(0xFF9FB7AE),
+                                  ),
+                        ),
                         const SizedBox(height: 24),
                         _ConfigPanel(config: widget.config),
                         const SizedBox(height: 20),
@@ -536,16 +617,7 @@ class DashboardRouter extends StatelessWidget {
   }
 }
 
-enum BusinessWorkspaceTab {
-  home,
-  video,
-  data,
-  health,
-  insights,
-  map,
-}
-
-class BusinessDashboard extends StatefulWidget {
+class BusinessDashboard extends StatelessWidget {
   const BusinessDashboard({
     super.key,
     required this.config,
@@ -562,355 +634,30 @@ class BusinessDashboard extends StatefulWidget {
   final VoidCallback onLogout;
 
   @override
-  State<BusinessDashboard> createState() => _BusinessDashboardState();
-}
-
-class _BusinessDashboardState extends State<BusinessDashboard> {
-  BusinessWorkspaceTab _selectedTab = BusinessWorkspaceTab.home;
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tabViews = <BusinessWorkspaceTab, Widget>{
-      BusinessWorkspaceTab.home: _BusinessHomeView(
-        auditStore: widget.auditStore,
-      ),
-      BusinessWorkspaceTab.video: const _BusinessVideoView(),
-      BusinessWorkspaceTab.data: const _BusinessDataView(),
-      BusinessWorkspaceTab.health: const _BusinessHealthView(),
-      BusinessWorkspaceTab.insights: const _BusinessInsightsView(),
-      BusinessWorkspaceTab.map: const _BusinessMapView(),
-    };
-
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Color(0xFF061A14),
-              Color(0xFF08211A),
-              Color(0xFF041611),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                _BusinessSidebar(
-                  selectedTab: _selectedTab,
-                  currentUser: widget.currentUser,
-                  onSelectTab: (tab) {
-                    setState(() {
-                      _selectedTab = tab;
-                    });
-                  },
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: _panelDecoration(
-                          borderColor: const Color(0xFF3A6153),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    widget.config.businessPortalLabel,
-                                    style: theme.textTheme.headlineMedium?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _businessTabSubtitle(_selectedTab),
-                                    style: theme.textTheme.bodyLarge?.copyWith(
-                                      color: const Color(0xFFB8D1C6),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            _StatusBadge(
-                              label: 'Backend ${widget.config.baseUrl}',
-                              color: const Color(0xFF7BE6A5),
-                            ),
-                            const SizedBox(width: 12),
-                            FilledButton.tonalIcon(
-                              onPressed: widget.onLogout,
-                              icon: const Icon(Icons.logout_rounded),
-                              label: const Text('Log out'),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
-                          child: KeyedSubtree(
-                            key: ValueKey<BusinessWorkspaceTab>(_selectedTab),
-                            child: tabViews[_selectedTab]!,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-String _businessTabSubtitle(BusinessWorkspaceTab tab) {
-  switch (tab) {
-    case BusinessWorkspaceTab.home:
-      return 'High-level operational snapshot for business partners.';
-    case BusinessWorkspaceTab.video:
-      return 'Live or recorded camera/vision feed workspace.';
-    case BusinessWorkspaceTab.data:
-      return 'Filterable event and equipment data reference.';
-    case BusinessWorkspaceTab.health:
-      return 'Machine status, maintenance flags, and warranty visibility.';
-    case BusinessWorkspaceTab.insights:
-      return 'Movement analytics, heat zones, and congregation insights.';
-    case BusinessWorkspaceTab.map:
-      return 'Gym map with hot zones, dead zones, and machine status markers.';
-  }
-}
-
-class _BusinessSidebar extends StatelessWidget {
-  const _BusinessSidebar({
-    required this.selectedTab,
-    required this.currentUser,
-    required this.onSelectTab,
-  });
-
-  final BusinessWorkspaceTab selectedTab;
-  final AppUser currentUser;
-  final ValueChanged<BusinessWorkspaceTab> onSelectTab;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = <(BusinessWorkspaceTab, IconData, String)>[
-      (BusinessWorkspaceTab.home, Icons.home_rounded, 'Home'),
-      (BusinessWorkspaceTab.video, Icons.videocam_rounded, 'Video'),
-      (BusinessWorkspaceTab.data, Icons.table_chart_rounded, 'Data Filter'),
-      (BusinessWorkspaceTab.health, Icons.fitness_center_rounded, 'Equipment Health'),
-      (BusinessWorkspaceTab.insights, Icons.analytics_rounded, 'Insights'),
-      (BusinessWorkspaceTab.map, Icons.map_rounded, 'Gym Map'),
-    ];
-
-    return Container(
-      width: 260,
-      padding: const EdgeInsets.all(18),
-      decoration: _panelDecoration(
-        borderColor: const Color(0xFF315347),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF7BE6A5).withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.apartment_rounded,
-                  color: Color(0xFF7BE6A5),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Business Workspace',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Partner-only dashboard',
-                      style: TextStyle(
-                        color: Color(0xFF9DB8AE),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          Text(
-            currentUser.displayName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            currentUser.email,
-            style: const TextStyle(
-              color: Color(0xFF9DB8AE),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 24),
-          for (final item in items) ...[
-            _BusinessSidebarItem(
-              icon: item.$2,
-              label: item.$3,
-              selected: selectedTab == item.$1,
-              onTap: () => onSelectTab(item.$1),
-            ),
-            const SizedBox(height: 10),
-          ],
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFF162A24),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF29483E)),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Demo note',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'This workspace is reserved for authenticated business partners. The layout is ready to receive live backend metrics later.',
-                  style: TextStyle(
-                    color: Color(0xFF9DB8AE),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BusinessSidebarItem extends StatelessWidget {
-  const _BusinessSidebarItem({
-    required this.icon,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF7BE6A5).withValues(alpha: 0.16)
-              : const Color(0xFF10211C),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected
-                ? const Color(0xFF7BE6A5)
-                : const Color(0xFF29483E),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: selected ? const Color(0xFF7BE6A5) : const Color(0xFF9DB8AE),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: selected ? Colors.white : const Color(0xFFD1E2D9),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _BusinessHomeView extends StatelessWidget {
-  const _BusinessHomeView({
-    required this.auditStore,
-  });
-
-  final LoginAuditStore auditStore;
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 2 : 1,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.65,
+    return _DashboardFrame(
+      title: config.businessPortalLabel,
+      subtitle: 'Registered business users land here for operational visibility.',
+      accent: const Color(0xFF7BE6A5),
+      currentUser: currentUser,
+      config: config,
+      backendToken: backendToken,
+      onLogout: onLogout,
       children: [
         const _MetricCard(
           title: 'Active Locations',
           value: '12',
-          detail: 'Three locations are currently feeding occupancy and health data.',
+          detail: 'Pull this from backend business analytics next.',
         ),
         const _MetricCard(
-          title: 'Live Cameras',
-          value: '08',
-          detail: 'Six online, one degraded, one awaiting calibration.',
+          title: 'Member Check-Ins',
+          value: '248',
+          detail: 'This is where server-side usage metrics would appear.',
         ),
         const _MetricCard(
-          title: 'Machine Alerts',
+          title: 'Vision Alerts',
           value: '03',
-          detail: 'Two maintenance flags and one warranty warning are active.',
+          detail: 'Camera/vision events should be processed and stored on the server.',
         ),
         _LoginAuditCard(logins: auditStore.recentLogins),
       ],
@@ -1493,7 +1240,7 @@ class GimUserDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _DashboardFrame(
       title: config.gimPortalLabel,
-      subtitle: 'General GIM users are routed here after authentication.',
+      subtitle: 'Easy Gym Life members are routed here for planning, scheduling, workouts, and day-to-day gym tools.',
       accent: const Color(0xFF8FD8FF),
       currentUser: currentUser,
       config: config,
@@ -1501,22 +1248,961 @@ class GimUserDashboard extends StatelessWidget {
       onLogout: onLogout,
       children: [
         const _MetricCard(
-          title: 'Today\'s Plan',
-          value: 'Strength',
-          detail: 'A future workout service can feed this from the backend.',
+          title: 'Workout Plan',
+          value: 'Upper Body',
+          detail: 'This space can surface the current training plan for the member.',
         ),
         const _MetricCard(
-          title: 'Check-In Status',
-          value: 'Ready',
-          detail: 'QR or access state should be delivered by the API.',
+          title: 'Schedule',
+          value: '6:30 PM',
+          detail: 'Class bookings, coaching sessions, or reminders can appear here.',
         ),
         const _MetricCard(
-          title: 'Graphics Feed',
-          value: 'Live',
-          detail: 'Flutter can render charts from data collected and stored by Node.',
+          title: 'Calendar',
+          value: '4 Sessions',
+          detail: 'A lighter member dashboard can focus on consistency, workouts, and upcoming activity.',
         ),
-        _LoginAuditCard(logins: auditStore.recentLogins),
+        const _MetricCard(
+          title: 'Consistency',
+          value: '12 Days',
+          detail: 'This can later track a continuous attendance streak or weekly consistency goal.',
+        ),
       ],
+    );
+  }
+}
+
+class _BusinessSidebar extends StatelessWidget {
+  const _BusinessSidebar({
+    required this.selectedTab,
+    required this.onSelectTab,
+    required this.isCompact,
+  });
+
+  final _BusinessDashboardTab selectedTab;
+  final ValueChanged<_BusinessDashboardTab> onSelectTab;
+  final bool isCompact;
+
+  @override
+  Widget build(BuildContext context) {
+    const items = <(_BusinessDashboardTab, IconData, String)>[
+      (_BusinessDashboardTab.home, Icons.home_rounded, 'Home'),
+      (_BusinessDashboardTab.video, Icons.videocam_rounded, 'Video Feed'),
+      (_BusinessDashboardTab.dataFilter, Icons.tune_rounded, 'Data Filter'),
+      (
+        _BusinessDashboardTab.equipmentHealth,
+        Icons.fitness_center_rounded,
+        'Equipment',
+      ),
+      (_BusinessDashboardTab.insights, Icons.insights_rounded, 'Insights'),
+      (_BusinessDashboardTab.gymMap, Icons.map_rounded, 'Gym Map'),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _panelDecoration(
+        borderColor: const Color(0xFF335A4A),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final item in items) ...[
+            _BusinessNavButton(
+              icon: item.$2,
+              label: item.$3,
+              selected: item.$1 == selectedTab,
+              isCompact: isCompact,
+              onTap: () => onSelectTab(item.$1),
+            ),
+            const SizedBox(height: 10),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BusinessNavButton extends StatelessWidget {
+  const _BusinessNavButton({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.isCompact,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool isCompact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? const Color(0xFF1A5BFF) : const Color(0xFF16231F),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 10 : 14,
+            vertical: 16,
+          ),
+          child: Row(
+            mainAxisAlignment:
+                isCompact ? MainAxisAlignment.center : MainAxisAlignment.start,
+            children: [
+              Icon(
+                icon,
+                color: Colors.white,
+              ),
+              if (!isCompact) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BusinessHeaderCard extends StatelessWidget {
+  const _BusinessHeaderCard({
+    required this.companyName,
+    required this.currentUser,
+    required this.width,
+  });
+
+  final String companyName;
+  final AppUser currentUser;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(18),
+      decoration: _panelDecoration(
+        backgroundColor: const Color(0xFF173226),
+        borderColor: const Color(0xFF3F775B),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            companyName,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            currentUser.displayName,
+            style: const TextStyle(
+              color: Color(0xFFBAF7D2),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            currentUser.email,
+            style: const TextStyle(
+              color: Color(0xFFCAE0D7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BusinessTbdCard extends StatelessWidget {
+  const _BusinessTbdCard({required this.width});
+
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(18),
+      decoration: _panelDecoration(
+        backgroundColor: const Color(0xFF173226),
+        borderColor: const Color(0xFF3F775B),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Priority Metrics',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'TBD: occupancy spikes, class utilization, machine downtime, and chain-wide exceptions can live here.',
+            style: TextStyle(
+              color: Color(0xFFCAE0D7),
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BusinessActionCard extends StatelessWidget {
+  const _BusinessActionCard({
+    required this.onLogout,
+    required this.width,
+  });
+
+  final VoidCallback onLogout;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(18),
+      decoration: _panelDecoration(
+        backgroundColor: const Color(0xFF173226),
+        borderColor: const Color(0xFF3F775B),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          FilledButton.tonalIcon(
+            onPressed: () {},
+            icon: const Icon(Icons.settings_rounded),
+            label: const Text('Settings'),
+          ),
+          const SizedBox(height: 10),
+          FilledButton.tonalIcon(
+            onPressed: onLogout,
+            icon: const Icon(Icons.logout_rounded),
+            label: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SourceChip extends StatelessWidget {
+  const _SourceChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? const Color(0xFF9F342B) : const Color(0xFF40231F),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BusinessContentPanel extends StatelessWidget {
+  const _BusinessContentPanel({
+    required this.selectedTab,
+    required this.selectedSource,
+    required this.config,
+    required this.auditStore,
+    required this.backendToken,
+  });
+
+  final _BusinessDashboardTab selectedTab;
+  final String selectedSource;
+  final AppConfig config;
+  final LoginAuditStore auditStore;
+  final String backendToken;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: _panelDecoration(
+        backgroundColor: const Color(0xFF1547D8),
+        borderColor: const Color(0xFF6FA2FF),
+      ),
+      child: _buildSelectedContent(),
+    );
+  }
+
+  Widget _buildSelectedContent() {
+    switch (selectedTab) {
+      case _BusinessDashboardTab.home:
+        return _BusinessHomeContent(
+          selectedSource: selectedSource,
+          logins: auditStore.recentLogins,
+        );
+      case _BusinessDashboardTab.video:
+        return _BusinessVideoContent(selectedSource: selectedSource);
+      case _BusinessDashboardTab.dataFilter:
+        return _BusinessDataFilterContent(selectedSource: selectedSource);
+      case _BusinessDashboardTab.equipmentHealth:
+        return _BusinessEquipmentContent(selectedSource: selectedSource);
+      case _BusinessDashboardTab.insights:
+        return _BusinessInsightsContent(selectedSource: selectedSource);
+      case _BusinessDashboardTab.gymMap:
+        return _BusinessMapContent(selectedSource: selectedSource);
+    }
+  }
+}
+
+class _BusinessHomeContent extends StatelessWidget {
+  const _BusinessHomeContent({
+    required this.selectedSource,
+    required this.logins,
+  });
+
+  final String selectedSource;
+  final List<AppUser> logins;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Home Overview',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Chain summary for $selectedSource. This is the landing view for business partners.',
+          style: const TextStyle(
+            color: Color(0xFFD9E6FF),
+          ),
+        ),
+        const SizedBox(height: 18),
+        const Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: [
+            _BusinessStatTile(
+              title: 'Total Occupancy',
+              value: '184',
+              detail: 'Across visible sites right now',
+            ),
+            _BusinessStatTile(
+              title: 'Alerted Zones',
+              value: '04',
+              detail: 'Areas worth reviewing',
+            ),
+            _BusinessStatTile(
+              title: 'Machines At Risk',
+              value: '07',
+              detail: 'Likely maintenance follow-up',
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: Container(
+            decoration: _panelDecoration(
+              backgroundColor: const Color(0xFF10317D),
+              borderColor: const Color(0xFF5F96FF),
+            ),
+            child: _LoginAuditCard(logins: logins),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessVideoContent extends StatelessWidget {
+  const _BusinessVideoContent({required this.selectedSource});
+
+  final String selectedSource;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Video Feed',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Primary monitored view for $selectedSource.',
+          style: const TextStyle(color: Color(0xFFD9E6FF)),
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: Container(
+            decoration: _panelDecoration(
+              backgroundColor: const Color(0xFF0A1F5F),
+              borderColor: const Color(0xFF5F96FF),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.play_circle_fill_rounded,
+                    size: 84,
+                    color: Color(0xFFA6C7FF),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Live or processed video feed goes here',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Future: camera stream, stick-figure overlay, occupancy count, and activity markers.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Color(0xFFD9E6FF),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessDataFilterContent extends StatelessWidget {
+  const _BusinessDataFilterContent({required this.selectedSource});
+
+  final String selectedSource;
+
+  @override
+  Widget build(BuildContext context) {
+    const rows = <(String, String, String, String)>[
+      ('07:42', 'Occupancy spike', 'Studio A', 'High'),
+      ('08:05', 'Push-up cluster', 'Functional Zone', 'Medium'),
+      ('08:18', 'Treadmill idle', 'Cardio Row', 'Low'),
+      ('08:31', 'Sit-up session', 'Mat Area', 'Medium'),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Data Filter',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Filtered event snapshots for $selectedSource.',
+          style: const TextStyle(color: Color(0xFFD9E6FF)),
+        ),
+        const SizedBox(height: 18),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: const [
+            _FilterPill(label: 'Today'),
+            _FilterPill(label: 'All cameras'),
+            _FilterPill(label: 'Human activity'),
+            _FilterPill(label: 'High confidence'),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: Container(
+            decoration: _panelDecoration(
+              backgroundColor: const Color(0xFF0F2C73),
+              borderColor: const Color(0xFF5F96FF),
+            ),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(18),
+              itemCount: rows.length,
+              separatorBuilder: (_, __) =>
+                  const Divider(color: Color(0xFF4F78D3)),
+              itemBuilder: (context, index) {
+                final row = rows[index];
+                return Row(
+                  children: [
+                    SizedBox(
+                      width: 72,
+                      child: Text(
+                        row.$1,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        row.$2,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 160,
+                      child: Text(
+                        row.$3,
+                        style: const TextStyle(color: Color(0xFFD9E6FF)),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 90,
+                      child: Text(
+                        row.$4,
+                        textAlign: TextAlign.right,
+                        style: const TextStyle(
+                          color: Color(0xFFAEE6FF),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessEquipmentContent extends StatelessWidget {
+  const _BusinessEquipmentContent({required this.selectedSource});
+
+  final String selectedSource;
+
+  @override
+  Widget build(BuildContext context) {
+    const equipment = <(String, String, Color)>[
+      ('Treadmill Cluster A', 'Green', Color(0xFF79E39A)),
+      ('Leg Press 02', 'Yellow', Color(0xFFF1D36B)),
+      ('Cable Station 07', 'Red', Color(0xFFFF7B6B)),
+      ('Bike Row', 'Green', Color(0xFF79E39A)),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Equipment Health',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Machine readiness for $selectedSource.',
+          style: const TextStyle(color: Color(0xFFD9E6FF)),
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: ListView.separated(
+            itemCount: equipment.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final item = equipment[index];
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: _panelDecoration(
+                  backgroundColor: const Color(0xFF0F2C73),
+                  borderColor: const Color(0xFF5F96FF),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.$1,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: item.$3.withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: item.$3),
+                      ),
+                      child: Text(
+                        item.$2,
+                        style: TextStyle(
+                          color: item.$3,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessInsightsContent extends StatelessWidget {
+  const _BusinessInsightsContent({required this.selectedSource});
+
+  final String selectedSource;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Insights',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Movement analytics and congregation trends for $selectedSource.',
+          style: const TextStyle(color: Color(0xFFD9E6FF)),
+        ),
+        const SizedBox(height: 18),
+        const Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: [
+            _BusinessStatTile(
+              title: 'Push-up Detections',
+              value: '41',
+              detail: 'Estimated this morning',
+            ),
+            _BusinessStatTile(
+              title: 'Sit-up Detections',
+              value: '29',
+              detail: 'Estimated this morning',
+            ),
+            _BusinessStatTile(
+              title: 'Heat Zones',
+              value: '3',
+              detail: 'Needs crowd balancing',
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: Container(
+            decoration: _panelDecoration(
+              backgroundColor: const Color(0xFF0F2C73),
+              borderColor: const Color(0xFF5F96FF),
+            ),
+            padding: const EdgeInsets.all(20),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Insight Summary',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'This panel can hold charts for movement categories, congestion windows, and machine adjacency usage. For now it acts as the blueprint for the analytics area you described.',
+                  style: TextStyle(
+                    color: Color(0xFFD9E6FF),
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessMapContent extends StatelessWidget {
+  const _BusinessMapContent({required this.selectedSource});
+
+  final String selectedSource;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Gym Map',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Hot zones, dead zones, and machine status mapping for $selectedSource.',
+          style: const TextStyle(color: Color(0xFFD9E6FF)),
+        ),
+        const SizedBox(height: 18),
+        Expanded(
+          child: Container(
+            decoration: _panelDecoration(
+              backgroundColor: const Color(0xFF0F2C73),
+              borderColor: const Color(0xFF5F96FF),
+            ),
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF12396F),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: const Color(0xFF5F96FF)),
+                    ),
+                    child: Stack(
+                      children: const [
+                        Positioned(
+                          left: 30,
+                          top: 30,
+                          child: _MapZoneMarker(
+                            label: 'Entry Flow',
+                            color: Color(0xFFFF7B6B),
+                          ),
+                        ),
+                        Positioned(
+                          left: 180,
+                          top: 160,
+                          child: _MapZoneMarker(
+                            label: 'Weights',
+                            color: Color(0xFFF1D36B),
+                          ),
+                        ),
+                        Positioned(
+                          right: 50,
+                          top: 90,
+                          child: _MapZoneMarker(
+                            label: 'Cardio',
+                            color: Color(0xFF79E39A),
+                          ),
+                        ),
+                        Positioned(
+                          right: 90,
+                          bottom: 50,
+                          child: _MapZoneMarker(
+                            label: 'Studio',
+                            color: Color(0xFF79E39A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _LegendChip(label: 'Green: healthy / low concern'),
+                    _LegendChip(label: 'Yellow: watch / monitor'),
+                    _LegendChip(label: 'Red: issue / crowding'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BusinessStatTile extends StatelessWidget {
+  const _BusinessStatTile({
+    required this.title,
+    required this.value,
+    required this.detail,
+  });
+
+  final String title;
+  final String value;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(16),
+      decoration: _panelDecoration(
+        backgroundColor: const Color(0xFF0F2C73),
+        borderColor: const Color(0xFF5F96FF),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFFD9E6FF),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            detail,
+            style: const TextStyle(
+              color: Color(0xFFAFC9FF),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF244D9B),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFF7EA9FF)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _MapZoneMarker extends StatelessWidget {
+  const _MapZoneMarker({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _LegendChip extends StatelessWidget {
+  const _LegendChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF23498F),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFFD9E6FF),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -1726,7 +2412,7 @@ class _LoginAuditCard extends StatelessWidget {
                       style: const TextStyle(color: Colors.white),
                     ),
                     subtitle: Text(
-                      '${login.role == UserRole.business ? 'Business' : 'GIM user'} • ${_formatTimestamp(login.lastLogin)}',
+                      '${login.role == UserRole.business ? 'Business' : 'Member'} • ${_formatTimestamp(login.lastLogin)}',
                       style: const TextStyle(color: Color(0xFF9DB8AE)),
                     ),
                     trailing: Icon(
@@ -1758,7 +2444,7 @@ class _ProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final roleText = currentUser.role == UserRole.business
         ? 'Business Account'
-        : 'GIM Member';
+        : 'Easy Gym Life Member';
 
     return Container(
       width: 360,
@@ -1938,7 +2624,7 @@ class _DemoAccountPanel extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'General demo: member@gimlife.app / GimUser123!',
+            'Member demo: member@easygymlife.app / GimUser123!',
             style: TextStyle(color: Color(0xFFCAE0D7)),
           ),
           SizedBox(height: 10),
@@ -2054,9 +2740,12 @@ class _ConfigRow extends StatelessWidget {
   }
 }
 
-BoxDecoration _panelDecoration({Color borderColor = const Color(0xFF29483E)}) {
+BoxDecoration _panelDecoration({
+  Color borderColor = const Color(0xFF29483E),
+  Color backgroundColor = const Color(0xFF10211C),
+}) {
   return BoxDecoration(
-    color: const Color(0xFF10211C),
+    color: backgroundColor,
     borderRadius: BorderRadius.circular(22),
     border: Border.all(color: borderColor),
   );
