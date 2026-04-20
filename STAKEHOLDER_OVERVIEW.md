@@ -22,7 +22,7 @@ This project is a role-based platform with:
 The core demo idea is:
 
 - business-affiliated users log in and see a business dashboard
-- general GIM users log in and see a general user dashboard
+- member users log in and see a member dashboard
 - the backend determines which dashboard to return based on credentials and user role
 
 ## What Works Today
@@ -31,6 +31,7 @@ The project currently demonstrates:
 
 - a frontend login experience
 - backend-driven authentication flow
+- demo-entry dashboard access while server setup is still being completed
 - role-based routing logic
 - a structured documentation and onboarding setup
 - a path for future camera-vision integration
@@ -45,6 +46,7 @@ That means:
 - the app flow is real
 - the demo accounts are intentional
 - some dashboard content is still placeholder or simulated
+- some dashboard access currently uses demo-entry buttons because the live server path is still being finalized
 - the camera-vision system is planned and documented, but not fully implemented end-to-end yet
 
 ## What Is Real Versus Simulated
@@ -62,6 +64,7 @@ That means:
 
 - some dashboard metrics
 - some seeded demo users
+- temporary demo-entry dashboard buttons
 - camera-vision integration
 - production hosting and infrastructure hardening
 
@@ -78,7 +81,7 @@ This demo is meant to prove:
 
 Use a short explanation like this:
 
-`This is a role-based gym platform where Flutter handles the user experience, Express handles the logic, and the backend can later ingest camera-vision and operational data to generate business and user dashboards.`
+`Easy Gym Life is a role-based gym platform where Flutter handles the user experience, Express handles the logic, and the backend can later ingest camera-vision and operational data to generate business and member dashboards.`
 
 ## What Not To Claim Yet
 

@@ -32,6 +32,7 @@ The goal of the demo is to show that:
 - some dashboard values
 - some seeded app accounts
 - the full camera-vision event pipeline
+- temporary demo-entry dashboard buttons while server authentication is still being finalized
 
 This distinction is important so the team presents the product honestly and consistently.
 
@@ -46,14 +47,16 @@ These are application-level public demo credentials, not database master credent
 - Expected result:
   - routes to the business dashboard
   - used to explain operational/business analytics flow
+  - the same layout can also be previewed from `Enter Business Demo Dashboard`
 
-### General GIM Demo Account
+### Member Demo Account
 
-- Email: `member@gimlife.app`
+- Email: `member@easygymlife.app`
 - Password: `GimUser123!`
 - Expected result:
-  - routes to the general user dashboard
-  - used to explain the standard user experience
+  - routes to the member dashboard
+  - used to explain the standard member experience
+  - the same layout can also be previewed from `Enter Member Demo Dashboard`
 
 ### Optional Internal Admin Demo Account
 
@@ -86,9 +89,9 @@ npm run dev
 Expected URLs:
 
 - backend: `http://localhost:3000`
-- frontend: `http://localhost:8080`
+- frontend: whichever Flutter URL is launched by `flutter run`, or `http://localhost:8080` if you use the web-server command
 
-Open the frontend in the browser and confirm the login page is visible before the demo starts.
+Then start Flutter separately and confirm the login page is visible before the demo starts.
 
 ## Pre-Demo Checklist
 
@@ -98,7 +101,7 @@ Before presenting:
 2. confirm the login page loads
 3. confirm the backend status page loads at `localhost:3000`
 4. test the business demo login once
-5. test the general demo login once
+5. test the member demo login once
 6. keep credentials ready in a note
 7. keep one backup terminal visible
 
@@ -116,7 +119,8 @@ Explain:
 
 - one frontend experience
 - role-based logic
-- backend-driven authentication
+- backend-driven authentication is the target path
+- demo-entry buttons currently exist because the server setup is still being completed
 
 ### 3. Business Dashboard Demo
 
@@ -127,15 +131,16 @@ Explain:
 - business users receive a different interface
 - this is where equipment analytics, occupancy, warranty alerts, or business metrics would appear
 
-### 4. General User Dashboard Demo
+### 4. Member Dashboard Demo
 
-Use the general user demo account.
+Use the member demo account.
 
 Explain:
 
-- general users are routed differently
+- member users are routed differently
 - the same backend decides what they should see
 - frontend adapts based on role
+- the current member dashboard is aimed at workouts, planning, scheduling, calendar-style use, and consistency tracking
 
 ### 5. Camera-Vision Future Path
 

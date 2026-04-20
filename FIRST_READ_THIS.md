@@ -20,7 +20,7 @@ This project is a role-based application with:
 The basic idea is:
 
 - business-affiliated users log in and go to a business dashboard
-- general GIM users log in and go to a general user dashboard
+- member users log in and go to a member dashboard
 - the backend decides which dashboard to return based on stored credentials and roles
 
 ## What Flutter Is
@@ -123,10 +123,10 @@ The intended role behavior is:
   - should see the business dashboard
   - dashboard may include operational metrics, equipment insights, warranty alerts, or usage analytics
 
-- `general GIM user`
+- `member user`
   - standard end user
-  - should see the general dashboard
-  - dashboard may include personal-facing features, usage data, gym activity, rewards, or check-in information
+  - should see the member dashboard
+  - dashboard may include planning, workouts, scheduling, calendar information, rewards, or check-in information
 
 - `developer/admin`
   - internal support role
@@ -406,16 +406,26 @@ For the simplest local workflow:
 npm run dev
 ```
 
-This starts:
+This starts the backend on:
 
-- backend on `http://localhost:3000`
-- frontend on `http://localhost:8080`
+`http://localhost:3000`
 
-Then open:
+Then start Flutter separately:
 
-```text
-http://localhost:8080
+```bash
+flutter pub get
+flutter run
 ```
+
+Then open the Flutter app URL that Flutter gives you in the browser.
+
+If you want a fixed frontend web URL, use:
+
+```bash
+flutter run -d web-server --web-hostname localhost --web-port 8080
+```
+
+That keeps the frontend at `http://localhost:8080`.
 
 If you run Flutter directly with:
 
@@ -467,6 +477,19 @@ npm run dev
 - The Flutter app URL is not the same thing as the Dart VM service URL
 - The DevTools URL is not the same thing as the frontend app URL
 
+## Current Demo Mode Note
+
+Right now, the backend/server authentication path is still being set up.
+
+Because of that, the login screen currently supports two demo preview paths:
+
+- `Enter Business Demo Dashboard`
+  - shows the business-facing dashboard with the left-side tabs and operations layout
+- `Enter Member Demo Dashboard`
+  - shows the lighter member-facing dashboard focused on workouts, planning, scheduling, calendar information, and consistency-style metrics
+
+Those demo buttons are there to keep frontend work moving while the backend connection is still being finalized.
+
 ## If You Need To Run Things Separately
 
 Backend only:
@@ -479,12 +502,6 @@ Frontend only:
 
 ```bash
 npm run dev:frontend
-```
-
-Chrome Dev specific:
-
-```bash
-npm run dev:chrome-dev
 ```
 
 If someone wants to run Flutter manually instead of using the npm helper:
@@ -575,7 +592,7 @@ Because they solve different parts of the app:
 
 ### Why is `npm run dev` not enough by itself in some cases?
 
-Because Flutter and Node are separate systems. In this repo, `npm run dev` has been set up to help launch both together for local development, but Flutter still has to exist on the machine.
+Because Flutter and Node are separate systems. In this repo, `npm run dev` starts the backend only. Flutter still needs its own separate run command.
 
 ### Why does the app URL change sometimes?
 

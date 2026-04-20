@@ -1,4 +1,4 @@
-# GIM Access Docs
+# Easy Gym Life Docs
 
 This repository uses a few focused documentation files so teammates can tell what each one is before opening it.
 

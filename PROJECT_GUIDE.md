@@ -1,11 +1,11 @@
-# GIM Access Flutter Demo
+# Easy Gym Life Flutter Demo
 
 For new contributors, start with `FIRST_READ_THIS.md` before using this guide.
 
 This Flutter app provides a role-aware login flow that sends authenticated users to one of two dashboards:
 
 - Registered business accounts go to the business dashboard.
-- General GIM users go to the GIM user dashboard.
+- Member users go to the member dashboard.
 
 ## Project structure
 
@@ -28,15 +28,15 @@ The app reads non-sensitive config from `assets/config/app.env`. A starter templ
 Example values:
 
 ```env
-APP_NAME=GIM Access
+APP_NAME=Easy Gym Life
 API_SCHEME=http
 API_HOST=localhost
 API_PORT=3000
-DB_NAME=gim_access
+DB_NAME=easy_gym_life
 DB_USER=app_user
 JWT_ISSUER=gim-auth-service
 BUSINESS_PORTAL_LABEL=Business Dashboard
-GIM_PORTAL_LABEL=GIM User Dashboard
+GIM_PORTAL_LABEL=Easy Gym Life Member Dashboard
 ```
 
 Important: do not place a real JWT signing secret in the Flutter client. Keep signing and token issuance on the backend.
@@ -44,9 +44,22 @@ Important: do not place a real JWT signing secret in the Flutter client. Keep si
 ## Public Demo Accounts
 
 - Business demo: `owner@iron-temple.com` / `Business123!`
-- General demo: `member@gimlife.app` / `GimUser123!`
+- Member demo: `member@easygymlife.app` / `GimUser123!`
 
 These are intentionally public demo-only application accounts. Do not reuse them for real environments.
+
+## Current Frontend Preview State
+
+The server-side authentication flow is still being completed.
+
+To keep frontend progress unblocked, the login screen currently includes:
+
+- `Enter Business Demo Dashboard`
+  - opens the business-facing operations dashboard with tabs for home, video, data filter, equipment health, insights, and gym map
+- `Enter Member Demo Dashboard`
+  - opens the lighter member-facing dashboard focused on workouts, planning, scheduling, calendar-style activity, and consistency-style metrics
+
+These are temporary demo-entry paths, not the final production authentication behavior.
 
 ## Run
 
@@ -62,29 +75,28 @@ Important: in this project, the backend and frontend are separate processes.
 
 If you open `http://localhost:3000/` in your browser, you should now see a backend status page, not the full Flutter app UI.
 
-For the simplest shared local workflow, use:
+For the simplest local workflow, use:
 
 ```bash
 npm install
 npm run dev
 ```
 
-That starts:
-
-- backend at `http://localhost:3000`
-- Flutter web app at `http://localhost:8080`
-
-This is the recommended teammate workflow because it reduces the setup to one command after Flutter is installed.
-
-`localhost` is not tied to one specific machine. It always means "this same computer" for whoever is running the project, so each teammate can run the app independently with the same URL pattern.
-
-If you specifically want to use the separate `Google Chrome Dev` app for Flutter debugging on macOS, use:
+Then run Flutter separately with either:
 
 ```bash
-npm run dev:chrome-dev
+flutter pub get
+flutter run
 ```
 
-That tells Flutter to launch `Google Chrome Dev.app` explicitly. If you see a "Cannot connect to VM service" message in a Dart DevTools tab, that usually means the debug session expired or DevTools was opened separately from the live app session. The safer workflow is still `npm run dev` plus manually opening `http://localhost:8080` in Chrome Dev.
+or, for a fixed frontend web URL:
+
+```bash
+flutter pub get
+flutter run -d web-server --web-hostname localhost --web-port 8080
+```
+
+`localhost` is not tied to one specific machine. It always means "this same computer" for whoever is running the project, so each teammate can run the app independently with the same URL pattern.
 
 ## Important Flutter web URL note
 
@@ -113,7 +125,7 @@ In that case:
 For a stable teammate-friendly URL, prefer:
 
 ```bash
-npm run dev
+flutter run -d web-server --web-hostname localhost --web-port 8080
 ```
 
 That keeps the frontend on:
@@ -130,7 +142,8 @@ http://localhost:3000
 
 So the recommended team rule is:
 
-- use `npm run dev` when you want a stable local URL
+- use `npm run dev` for the backend
+- use `flutter run -d web-server --web-hostname localhost --web-port 8080` when you want a stable frontend local URL
 - only use `flutter run -d chrome` directly if you are okay with Flutter picking a temporary port
 
 ## Backend setup
