@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -108,10 +110,7 @@ class _GimAccessAppState extends State<GimAccessApp> {
   }
 }
 
-enum UserRole {
-  business,
-  gim,
-}
+enum UserRole { business, gim }
 
 UserRole userRoleFromApi(String value) {
   switch (value.toLowerCase()) {
@@ -141,10 +140,7 @@ class AppUser {
 }
 
 class AuthSession {
-  const AuthSession({
-    required this.token,
-    required this.user,
-  });
+  const AuthSession({required this.token, required this.user});
 
   final String token;
   final AppUser user;
@@ -152,7 +148,7 @@ class AuthSession {
 
 class ApiAuthRepository {
   ApiAuthRepository({required this.config, http.Client? client})
-      : _client = client ?? http.Client();
+    : _client = client ?? http.Client();
 
   final AppConfig config;
   final http.Client _client;
@@ -164,13 +160,8 @@ class ApiAuthRepository {
     try {
       response = await _client.post(
         uri,
-        headers: const {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email.trim(),
-          'password': password,
-        }),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email.trim(), 'password': password}),
       );
     } catch (_) {
       throw AuthException(
@@ -191,9 +182,7 @@ class ApiAuthRepository {
     final userJson = body['user'] as Map<String, dynamic>?;
 
     if (token == null || userJson == null) {
-      throw const AuthException(
-        'The backend login response was incomplete.',
-      );
+      throw const AuthException('The backend login response was incomplete.');
     }
 
     return AuthSession(
@@ -277,7 +266,8 @@ class AppConfigLoader {
       jwtIssuer: values['JWT_ISSUER'] ?? 'gim-backend',
       businessPortalLabel:
           values['BUSINESS_PORTAL_LABEL'] ?? 'Business Dashboard',
-      gimPortalLabel: values['GIM_PORTAL_LABEL'] ?? 'Easy Gym Life Member Dashboard',
+      gimPortalLabel:
+          values['GIM_PORTAL_LABEL'] ?? 'Easy Gym Life Member Dashboard',
     );
   }
 
@@ -293,7 +283,9 @@ class AppConfigLoader {
     final result = <String, String>{};
     for (final line in raw.split('\n')) {
       final trimmed = line.trim();
-      if (trimmed.isEmpty || trimmed.startsWith('#') || !trimmed.contains('=')) {
+      if (trimmed.isEmpty ||
+          trimmed.startsWith('#') ||
+          !trimmed.contains('=')) {
         continue;
       }
 
@@ -349,10 +341,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      await widget.onLogin(
-        _emailController.text,
-        _passwordController.text,
-      );
+      await widget.onLogin(_emailController.text, _passwordController.text);
     } on AuthException catch (error) {
       setState(() {
         _errorText = error.message;
@@ -391,11 +380,7 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF03120F),
-              Color(0xFF08231C),
-              Color(0xFF041611),
-            ],
+            colors: [Color(0xFF03120F), Color(0xFF08231C), Color(0xFF041611)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -429,7 +414,8 @@ class _LoginPageState extends State<LoginPage> {
                         Text(
                           widget.config.appName,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(
                                 color: const Color(0xFFC9FFD8),
                                 fontWeight: FontWeight.w800,
                               ),
@@ -438,9 +424,8 @@ class _LoginPageState extends State<LoginPage> {
                         Text(
                           'Flutter handles the interface. Express handles login, JWTs, and data.',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: const Color(0xFF72DD98),
-                              ),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: const Color(0xFF72DD98)),
                         ),
                         const SizedBox(height: 28),
                         const _FieldLabel(text: 'Email'),
@@ -502,7 +487,9 @@ class _LoginPageState extends State<LoginPage> {
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 )
                               : const Text('Log In'),
                         ),
@@ -525,8 +512,9 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 12),
                         TextButton.icon(
-                          onPressed:
-                              _isLoading ? null : widget.onEnterBusinessDemo,
+                          onPressed: _isLoading
+                              ? null
+                              : widget.onEnterBusinessDemo,
                           icon: const Icon(Icons.storefront_rounded),
                           label: const Text('Enter Business Demo Dashboard'),
                           style: TextButton.styleFrom(
@@ -540,8 +528,9 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 12),
                         TextButton.icon(
-                          onPressed:
-                              _isLoading ? null : widget.onEnterGeneralDemo,
+                          onPressed: _isLoading
+                              ? null
+                              : widget.onEnterGeneralDemo,
                           icon: const Icon(Icons.calendar_month_rounded),
                           label: const Text('Enter Member Demo Dashboard'),
                           style: TextButton.styleFrom(
@@ -557,10 +546,8 @@ class _LoginPageState extends State<LoginPage> {
                         Text(
                           'Use the demo dashboard buttons when backend authentication is still being set up and you need to preview the business or member experience.',
                           textAlign: TextAlign.center,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: const Color(0xFF9FB7AE),
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: const Color(0xFF9FB7AE)),
                         ),
                         const SizedBox(height: 24),
                         _ConfigPanel(config: widget.config),
@@ -617,7 +604,16 @@ class DashboardRouter extends StatelessWidget {
   }
 }
 
-class BusinessDashboard extends StatelessWidget {
+enum _BusinessDashboardTab {
+  home,
+  video,
+  dataFilter,
+  equipmentHealth,
+  insights,
+  gymMap,
+}
+
+class BusinessDashboard extends StatefulWidget {
   const BusinessDashboard({
     super.key,
     required this.config,
@@ -634,33 +630,157 @@ class BusinessDashboard extends StatelessWidget {
   final VoidCallback onLogout;
 
   @override
+  State<BusinessDashboard> createState() => _BusinessDashboardState();
+}
+
+class _BusinessDashboardState extends State<BusinessDashboard> {
+  _BusinessDashboardTab _selectedTab = _BusinessDashboardTab.home;
+  String _selectedSource = 'All Locations';
+
+  String get _tabSubtitle {
+    switch (_selectedTab) {
+      case _BusinessDashboardTab.home:
+        return 'Chain-level operational view for the current demo environment.';
+      case _BusinessDashboardTab.video:
+        return 'Preview the camera and processed-vision workspace.';
+      case _BusinessDashboardTab.dataFilter:
+        return 'Filter representative event data by source, zone, and event type.';
+      case _BusinessDashboardTab.equipmentHealth:
+        return 'Review machine readiness, maintenance risk, and service status.';
+      case _BusinessDashboardTab.insights:
+        return 'Surface movement analytics, heat zones, and congestion signals.';
+      case _BusinessDashboardTab.gymMap:
+        return 'Inspect hot zones, dead zones, and equipment state overlays.';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return _DashboardFrame(
-      title: config.businessPortalLabel,
-      subtitle: 'Registered business users land here for operational visibility.',
-      accent: const Color(0xFF7BE6A5),
-      currentUser: currentUser,
-      config: config,
-      backendToken: backendToken,
-      onLogout: onLogout,
-      children: [
-        const _MetricCard(
-          title: 'Active Locations',
-          value: '12',
-          detail: 'Pull this from backend business analytics next.',
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF071711), Color(0xFF0E251C), Color(0xFF06130F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-        const _MetricCard(
-          title: 'Member Check-Ins',
-          value: '248',
-          detail: 'This is where server-side usage metrics would appear.',
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isCompact = constraints.maxWidth < 940;
+              final sidebarWidth = isCompact ? 78.0 : 220.0;
+              final contentMaxWidth = constraints.maxWidth - sidebarWidth - 54;
+              final headerCardWidth = isCompact
+                  ? contentMaxWidth.clamp(220.0, 360.0)
+                  : 420.0;
+              final tbdCardWidth = isCompact
+                  ? contentMaxWidth.clamp(220.0, 360.0)
+                  : 320.0;
+              final actionCardWidth = isCompact
+                  ? contentMaxWidth.clamp(220.0, 360.0)
+                  : 220.0;
+
+              return Padding(
+                padding: const EdgeInsets.all(18),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: sidebarWidth,
+                      child: _BusinessSidebar(
+                        selectedTab: _selectedTab,
+                        isCompact: isCompact,
+                        onSelectTab: (tab) {
+                          setState(() {
+                            _selectedTab = tab;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Wrap(
+                            spacing: 14,
+                            runSpacing: 14,
+                            children: [
+                              _BusinessHeaderCard(
+                                companyName: widget.config.businessPortalLabel,
+                                currentUser: widget.currentUser,
+                                width: headerCardWidth,
+                              ),
+                              _BusinessTbdCard(width: tbdCardWidth),
+                              _BusinessActionCard(
+                                onLogout: widget.onLogout,
+                                width: actionCardWidth,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _SourceChip(
+                                label: 'All Locations',
+                                selected: _selectedSource == 'All Locations',
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSource = 'All Locations';
+                                  });
+                                },
+                              ),
+                              _SourceChip(
+                                label: 'Downtown',
+                                selected: _selectedSource == 'Downtown',
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSource = 'Downtown';
+                                  });
+                                },
+                              ),
+                              _SourceChip(
+                                label: 'Iron Temple',
+                                selected: _selectedSource == 'Iron Temple',
+                                onTap: () {
+                                  setState(() {
+                                    _selectedSource = 'Iron Temple';
+                                  });
+                                },
+                              ),
+                              Text(
+                                _tabSubtitle,
+                                style: const TextStyle(
+                                  color: Color(0xFFBFD2CA),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          Expanded(
+                            child: _BusinessContentPanel(
+                              selectedTab: _selectedTab,
+                              selectedSource: _selectedSource,
+                              config: widget.config,
+                              auditStore: widget.auditStore,
+                              backendToken: widget.backendToken,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
-        const _MetricCard(
-          title: 'Vision Alerts',
-          value: '03',
-          detail: 'Camera/vision events should be processed and stored on the server.',
-        ),
-        _LoginAuditCard(logins: auditStore.recentLogins),
-      ],
+      ),
     );
   }
 }
@@ -691,9 +811,7 @@ class _BusinessVideoView extends StatelessWidget {
                 const SizedBox(height: 10),
                 const Text(
                   'Placeholder panel for live stream or processed camera feed.',
-                  style: TextStyle(
-                    color: Color(0xFF9DB8AE),
-                  ),
+                  style: TextStyle(color: Color(0xFF9DB8AE)),
                 ),
                 const SizedBox(height: 18),
                 Expanded(
@@ -701,10 +819,7 @@ class _BusinessVideoView extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
                       gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFF0E2B23),
-                          Color(0xFF18362F),
-                        ],
+                        colors: [Color(0xFF0E2B23), Color(0xFF18362F)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -731,9 +846,7 @@ class _BusinessVideoView extends StatelessWidget {
                           SizedBox(height: 6),
                           Text(
                             'This is where the business-facing camera page would render.',
-                            style: TextStyle(
-                              color: Color(0xFF9DB8AE),
-                            ),
+                            style: TextStyle(color: Color(0xFF9DB8AE)),
                           ),
                         ],
                       ),
@@ -794,9 +907,15 @@ class _BusinessDataView extends StatelessWidget {
             spacing: 10,
             runSpacing: 10,
             children: const [
-              _StatusBadge(label: 'Location: Downtown', color: Color(0xFF8FD8FF)),
+              _StatusBadge(
+                label: 'Location: Downtown',
+                color: Color(0xFF8FD8FF),
+              ),
               _StatusBadge(label: 'Window: Today', color: Color(0xFFF4C96B)),
-              _StatusBadge(label: 'Source: Vision events', color: Color(0xFF7BE6A5)),
+              _StatusBadge(
+                label: 'Source: Vision events',
+                color: Color(0xFF7BE6A5),
+              ),
             ],
           ),
           const SizedBox(height: 18),
@@ -821,9 +940,7 @@ class _BusinessDataView extends StatelessWidget {
                 headingRowColor: WidgetStateProperty.all(
                   const Color(0xFF163029),
                 ),
-                dataRowColor: WidgetStateProperty.all(
-                  const Color(0xFF10211C),
-                ),
+                dataRowColor: WidgetStateProperty.all(const Color(0xFF10211C)),
                 columns: const [
                   DataColumn(label: Text('Camera')),
                   DataColumn(label: Text('Zone')),
@@ -834,7 +951,9 @@ class _BusinessDataView extends StatelessWidget {
                 rows: rows
                     .map(
                       (row) => DataRow(
-                        cells: row.map((value) => DataCell(Text(value))).toList(),
+                        cells: row
+                            .map((value) => DataCell(Text(value)))
+                            .toList(),
                       ),
                     )
                     .toList(),
@@ -852,12 +971,33 @@ class _BusinessHealthView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final equipment = <({String name, String status, double health, Color color})>[
-      (name: 'PTRM1001 Treadmill', status: 'Healthy', health: 0.91, color: const Color(0xFF7BE6A5)),
-      (name: 'PTRM1004 Treadmill', status: 'Watchlist', health: 0.66, color: const Color(0xFFF4C96B)),
-      (name: 'LEGP2001 Leg Press', status: 'Needs Service', health: 0.38, color: const Color(0xFFE98D86)),
-      (name: 'ELLP3002 Elliptical', status: 'Healthy', health: 0.88, color: const Color(0xFF7BE6A5)),
-    ];
+    final equipment =
+        <({String name, String status, double health, Color color})>[
+          (
+            name: 'PTRM1001 Treadmill',
+            status: 'Healthy',
+            health: 0.91,
+            color: const Color(0xFF7BE6A5),
+          ),
+          (
+            name: 'PTRM1004 Treadmill',
+            status: 'Watchlist',
+            health: 0.66,
+            color: const Color(0xFFF4C96B),
+          ),
+          (
+            name: 'LEGP2001 Leg Press',
+            status: 'Needs Service',
+            health: 0.38,
+            color: const Color(0xFFE98D86),
+          ),
+          (
+            name: 'ELLP3002 Elliptical',
+            status: 'Healthy',
+            health: 0.88,
+            color: const Color(0xFF7BE6A5),
+          ),
+        ];
 
     return Container(
       decoration: _panelDecoration(),
@@ -954,7 +1094,8 @@ class _BusinessInsightsView extends StatelessWidget {
         _MetricCard(
           title: 'Heat Zones',
           value: 'Free Weights',
-          detail: 'Most concentrated usage zone based on current event density.',
+          detail:
+              'Most concentrated usage zone based on current event density.',
         ),
         _MetricCard(
           title: 'Congregation Watch',
@@ -1007,32 +1148,56 @@ class _BusinessMapView extends StatelessWidget {
                         Positioned(
                           left: 34,
                           top: 34,
-                          child: _MapZone(label: 'Cardio', color: Color(0x447BE6A5), width: 220, height: 120),
+                          child: _MapZone(
+                            label: 'Cardio',
+                            color: Color(0x447BE6A5),
+                            width: 220,
+                            height: 120,
+                          ),
                         ),
                         Positioned(
                           right: 38,
                           top: 60,
-                          child: _MapZone(label: 'Free Weights', color: Color(0x44F4C96B), width: 200, height: 140),
+                          child: _MapZone(
+                            label: 'Free Weights',
+                            color: Color(0x44F4C96B),
+                            width: 200,
+                            height: 140,
+                          ),
                         ),
                         Positioned(
                           left: 90,
                           bottom: 40,
-                          child: _MapZone(label: 'Studios', color: Color(0x448FD8FF), width: 180, height: 110),
+                          child: _MapZone(
+                            label: 'Studios',
+                            color: Color(0x448FD8FF),
+                            width: 180,
+                            height: 110,
+                          ),
                         ),
                         Positioned(
                           right: 90,
                           bottom: 60,
-                          child: _MachineMarker(label: 'PTRM1001', color: Color(0xFF7BE6A5)),
+                          child: _MachineMarker(
+                            label: 'PTRM1001',
+                            color: Color(0xFF7BE6A5),
+                          ),
                         ),
                         Positioned(
                           right: 160,
                           bottom: 100,
-                          child: _MachineMarker(label: 'LEGP2001', color: Color(0xFFF4C96B)),
+                          child: _MachineMarker(
+                            label: 'LEGP2001',
+                            color: Color(0xFFF4C96B),
+                          ),
                         ),
                         Positioned(
                           left: 180,
                           top: 90,
-                          child: _MachineMarker(label: 'ELLP3002', color: Color(0xFFE98D86)),
+                          child: _MachineMarker(
+                            label: 'ELLP3002',
+                            color: Color(0xFFE98D86),
+                          ),
                         ),
                       ],
                     ),
@@ -1079,7 +1244,10 @@ class _BusinessMapView extends StatelessWidget {
                 SizedBox(height: 8),
                 _StatusBadge(label: 'Dead zones', color: Color(0xFF8FD8FF)),
                 SizedBox(height: 8),
-                _StatusBadge(label: 'Equipment state', color: Color(0xFF7BE6A5)),
+                _StatusBadge(
+                  label: 'Equipment state',
+                  color: Color(0xFF7BE6A5),
+                ),
               ],
             ),
           ),
@@ -1090,10 +1258,7 @@ class _BusinessMapView extends StatelessWidget {
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
-    required this.label,
-    required this.color,
-  });
+  const _StatusBadge({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -1109,10 +1274,7 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w700,
-        ),
+        style: TextStyle(color: color, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -1155,10 +1317,7 @@ class _MapZone extends StatelessWidget {
 }
 
 class _MachineMarker extends StatelessWidget {
-  const _MachineMarker({
-    required this.label,
-    required this.color,
-  });
+  const _MachineMarker({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -1167,11 +1326,7 @@ class _MachineMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(
-          Icons.location_on_rounded,
-          color: color,
-          size: 28,
-        ),
+        Icon(Icons.location_on_rounded, color: color, size: 28),
         Text(
           label,
           style: const TextStyle(
@@ -1186,10 +1341,7 @@ class _MachineMarker extends StatelessWidget {
 }
 
 class _LegendRow extends StatelessWidget {
-  const _LegendRow({
-    required this.label,
-    required this.color,
-  });
+  const _LegendRow({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -1208,12 +1360,7 @@ class _LegendRow extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFFD1E2D9),
-            ),
-          ),
+          child: Text(label, style: const TextStyle(color: Color(0xFFD1E2D9))),
         ),
       ],
     );
@@ -1240,7 +1387,8 @@ class GimUserDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _DashboardFrame(
       title: config.gimPortalLabel,
-      subtitle: 'Easy Gym Life members are routed here for planning, scheduling, workouts, and day-to-day gym tools.',
+      subtitle:
+          'Easy Gym Life members are routed here for planning, scheduling, workouts, and day-to-day gym tools.',
       accent: const Color(0xFF8FD8FF),
       currentUser: currentUser,
       config: config,
@@ -1250,22 +1398,26 @@ class GimUserDashboard extends StatelessWidget {
         const _MetricCard(
           title: 'Workout Plan',
           value: 'Upper Body',
-          detail: 'This space can surface the current training plan for the member.',
+          detail:
+              'This space can surface the current training plan for the member.',
         ),
         const _MetricCard(
           title: 'Schedule',
           value: '6:30 PM',
-          detail: 'Class bookings, coaching sessions, or reminders can appear here.',
+          detail:
+              'Class bookings, coaching sessions, or reminders can appear here.',
         ),
         const _MetricCard(
           title: 'Calendar',
           value: '4 Sessions',
-          detail: 'A lighter member dashboard can focus on consistency, workouts, and upcoming activity.',
+          detail:
+              'A lighter member dashboard can focus on consistency, workouts, and upcoming activity.',
         ),
         const _MetricCard(
           title: 'Consistency',
           value: '12 Days',
-          detail: 'This can later track a continuous attendance streak or weekly consistency goal.',
+          detail:
+              'This can later track a continuous attendance streak or weekly consistency goal.',
         ),
       ],
     );
@@ -1300,9 +1452,7 @@ class _BusinessSidebar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: _panelDecoration(
-        borderColor: const Color(0xFF335A4A),
-      ),
+      decoration: _panelDecoration(borderColor: const Color(0xFF335A4A)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1351,13 +1501,11 @@ class _BusinessNavButton extends StatelessWidget {
             vertical: 16,
           ),
           child: Row(
-            mainAxisAlignment:
-                isCompact ? MainAxisAlignment.center : MainAxisAlignment.start,
+            mainAxisAlignment: isCompact
+                ? MainAxisAlignment.center
+                : MainAxisAlignment.start,
             children: [
-              Icon(
-                icon,
-                color: Colors.white,
-              ),
+              Icon(icon, color: Colors.white),
               if (!isCompact) ...[
                 const SizedBox(width: 12),
                 Expanded(
@@ -1404,9 +1552,9 @@ class _BusinessHeaderCard extends StatelessWidget {
           Text(
             companyName,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -1419,9 +1567,7 @@ class _BusinessHeaderCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             currentUser.email,
-            style: const TextStyle(
-              color: Color(0xFFCAE0D7),
-            ),
+            style: const TextStyle(color: Color(0xFFCAE0D7)),
           ),
         ],
       ),
@@ -1457,10 +1603,7 @@ class _BusinessTbdCard extends StatelessWidget {
           SizedBox(height: 10),
           Text(
             'TBD: occupancy spikes, class utilization, machine downtime, and chain-wide exceptions can live here.',
-            style: TextStyle(
-              color: Color(0xFFCAE0D7),
-              height: 1.45,
-            ),
+            style: TextStyle(color: Color(0xFFCAE0D7), height: 1.45),
           ),
         ],
       ),
@@ -1469,10 +1612,7 @@ class _BusinessTbdCard extends StatelessWidget {
 }
 
 class _BusinessActionCard extends StatelessWidget {
-  const _BusinessActionCard({
-    required this.onLogout,
-    required this.width,
-  });
+  const _BusinessActionCard({required this.onLogout, required this.width});
 
   final VoidCallback onLogout;
   final double width;
@@ -1605,16 +1745,14 @@ class _BusinessHomeContent extends StatelessWidget {
         Text(
           'Home Overview',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Chain summary for $selectedSource. This is the landing view for business partners.',
-          style: const TextStyle(
-            color: Color(0xFFD9E6FF),
-          ),
+          style: const TextStyle(color: Color(0xFFD9E6FF)),
         ),
         const SizedBox(height: 18),
         const Wrap(
@@ -1666,9 +1804,9 @@ class _BusinessVideoContent extends StatelessWidget {
         Text(
           'Video Feed',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -1704,9 +1842,7 @@ class _BusinessVideoContent extends StatelessWidget {
                   Text(
                     'Future: camera stream, stick-figure overlay, occupancy count, and activity markers.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Color(0xFFD9E6FF),
-                    ),
+                    style: TextStyle(color: Color(0xFFD9E6FF)),
                   ),
                 ],
               ),
@@ -1738,9 +1874,9 @@ class _BusinessDataFilterContent extends StatelessWidget {
         Text(
           'Data Filter',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -1768,7 +1904,7 @@ class _BusinessDataFilterContent extends StatelessWidget {
             child: ListView.separated(
               padding: const EdgeInsets.all(18),
               itemCount: rows.length,
-              separatorBuilder: (_, __) =>
+              separatorBuilder: (_, _) =>
                   const Divider(color: Color(0xFF4F78D3)),
               itemBuilder: (context, index) {
                 final row = rows[index];
@@ -1839,9 +1975,9 @@ class _BusinessEquipmentContent extends StatelessWidget {
         Text(
           'Equipment Health',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -1852,7 +1988,7 @@ class _BusinessEquipmentContent extends StatelessWidget {
         Expanded(
           child: ListView.separated(
             itemCount: equipment.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final item = equipment[index];
               return Container(
@@ -1914,9 +2050,9 @@ class _BusinessInsightsContent extends StatelessWidget {
         Text(
           'Insights',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -1967,10 +2103,7 @@ class _BusinessInsightsContent extends StatelessWidget {
                 SizedBox(height: 12),
                 Text(
                   'This panel can hold charts for movement categories, congestion windows, and machine adjacency usage. For now it acts as the blueprint for the analytics area you described.',
-                  style: TextStyle(
-                    color: Color(0xFFD9E6FF),
-                    height: 1.5,
-                  ),
+                  style: TextStyle(color: Color(0xFFD9E6FF), height: 1.5),
                 ),
               ],
             ),
@@ -1994,9 +2127,9 @@ class _BusinessMapContent extends StatelessWidget {
         Text(
           'Gym Map',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -2117,12 +2250,7 @@ class _BusinessStatTile extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            detail,
-            style: const TextStyle(
-              color: Color(0xFFAFC9FF),
-            ),
-          ),
+          Text(detail, style: const TextStyle(color: Color(0xFFAFC9FF))),
         ],
       ),
     );
@@ -2155,10 +2283,7 @@ class _FilterPill extends StatelessWidget {
 }
 
 class _MapZoneMarker extends StatelessWidget {
-  const _MapZoneMarker({
-    required this.label,
-    required this.color,
-  });
+  const _MapZoneMarker({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -2174,10 +2299,7 @@ class _MapZoneMarker extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w800,
-        ),
+        style: TextStyle(color: color, fontWeight: FontWeight.w800),
       ),
     );
   }
@@ -2264,9 +2386,7 @@ class _DashboardFrame extends StatelessWidget {
                             children: [
                               Text(
                                 title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineLarge
+                                style: Theme.of(context).textTheme.headlineLarge
                                     ?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w800,
@@ -2275,9 +2395,7 @@ class _DashboardFrame extends StatelessWidget {
                               const SizedBox(height: 8),
                               Text(
                                 subtitle,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
+                                style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(color: const Color(0xFFB8D1C6)),
                               ),
                             ],
@@ -2295,21 +2413,16 @@ class _DashboardFrame extends StatelessWidget {
                       spacing: 16,
                       runSpacing: 16,
                       children: [
-                        _ProfileCard(
-                          currentUser: currentUser,
-                          accent: accent,
-                        ),
-                        _ServerCard(
-                          config: config,
-                          backendToken: backendToken,
-                        ),
+                        _ProfileCard(currentUser: currentUser, accent: accent),
+                        _ServerCard(config: config, backendToken: backendToken),
                       ],
                     ),
                     const SizedBox(height: 20),
                     Expanded(
                       child: GridView.count(
-                        crossAxisCount:
-                            MediaQuery.of(context).size.width > 900 ? 2 : 1,
+                        crossAxisCount: MediaQuery.of(context).size.width > 900
+                            ? 2
+                            : 1,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                         childAspectRatio: 1.8,
@@ -2349,24 +2462,24 @@ class _MetricCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: const Color(0xFF97B6A9),
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: const Color(0xFF97B6A9)),
           ),
           const SizedBox(height: 14),
           Text(
             value,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             detail,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFFCADED3),
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: const Color(0xFFCADED3)),
           ),
         ],
       ),
@@ -2390,9 +2503,9 @@ class _LoginAuditCard extends StatelessWidget {
           Text(
             'Recent Login Activity',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 12),
           if (logins.isEmpty)
@@ -2432,10 +2545,7 @@ class _LoginAuditCard extends StatelessWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({
-    required this.currentUser,
-    required this.accent,
-  });
+  const _ProfileCard({required this.currentUser, required this.accent});
 
   final AppUser currentUser;
   final Color accent;
@@ -2494,17 +2604,12 @@ class _ProfileCard extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             currentUser.email,
-            style: const TextStyle(
-              color: Color(0xFFCAE0D7),
-              fontSize: 15,
-            ),
+            style: const TextStyle(color: Color(0xFFCAE0D7), fontSize: 15),
           ),
           const SizedBox(height: 10),
           Text(
             'Last authenticated at ${_formatTimestamp(currentUser.lastLogin)}',
-            style: const TextStyle(
-              color: Color(0xFF97B6A9),
-            ),
+            style: const TextStyle(color: Color(0xFF97B6A9)),
           ),
         ],
       ),
@@ -2513,10 +2618,7 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _ServerCard extends StatelessWidget {
-  const _ServerCard({
-    required this.config,
-    required this.backendToken,
-  });
+  const _ServerCard({required this.config, required this.backendToken});
 
   final AppConfig config;
   final String backendToken;
@@ -2537,9 +2639,9 @@ class _ServerCard extends StatelessWidget {
           Text(
             'Backend Configuration',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 14),
           _ConfigRow(label: 'Base URL', value: config.baseUrl),
@@ -2550,10 +2652,7 @@ class _ServerCard extends StatelessWidget {
           const SizedBox(height: 10),
           const Text(
             'For production, keep camera data processing and analytics on the server, then let Flutter render charts, dashboards, and alerts from API responses.',
-            style: TextStyle(
-              color: Color(0xFF97B6A9),
-              height: 1.4,
-            ),
+            style: TextStyle(color: Color(0xFF97B6A9), height: 1.4),
           ),
         ],
       ),
@@ -2587,7 +2686,10 @@ class _ConfigPanel extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _ConfigRow(label: 'Endpoint', value: config.baseUrl),
-          _ConfigRow(label: 'Database', value: '${config.dbName} (${config.dbUser})'),
+          _ConfigRow(
+            label: 'Database',
+            value: '${config.dbName} (${config.dbUser})',
+          ),
           _ConfigRow(label: 'Issuer', value: config.jwtIssuer),
         ],
       ),
@@ -2612,10 +2714,7 @@ class _DemoAccountPanel extends StatelessWidget {
         children: [
           Text(
             'Public demo accounts',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 10),
           Text(
@@ -2688,8 +2787,10 @@ class _StyledInput extends StatelessWidget {
           borderSide: BorderSide.none,
         ),
         errorStyle: const TextStyle(fontWeight: FontWeight.w600),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 18,
+        ),
       ),
       style: const TextStyle(
         color: Color(0xFF13202E),
@@ -2700,10 +2801,7 @@ class _StyledInput extends StatelessWidget {
 }
 
 class _ConfigRow extends StatelessWidget {
-  const _ConfigRow({
-    required this.label,
-    required this.value,
-  });
+  const _ConfigRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -2755,8 +2853,8 @@ String _formatTimestamp(DateTime timestamp) {
   final hour = timestamp.hour > 12
       ? timestamp.hour - 12
       : timestamp.hour == 0
-          ? 12
-          : timestamp.hour;
+      ? 12
+      : timestamp.hour;
   final minute = timestamp.minute.toString().padLeft(2, '0');
   final period = timestamp.hour >= 12 ? 'PM' : 'AM';
   return '${timestamp.month}/${timestamp.day}/${timestamp.year} $hour:$minute $period';
