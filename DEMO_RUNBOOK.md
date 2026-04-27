@@ -52,7 +52,7 @@ These are application-level public demo credentials, not database master credent
 ### Member Demo Account
 
 - Email: `member@easygymlife.app`
-- Password: `GimUser123!`
+- Password: `EGLUser123!`
 - Expected result:
   - routes to the member dashboard
   - used to explain the standard member experience

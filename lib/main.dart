@@ -257,17 +257,17 @@ class AppConfigLoader {
     final envText = await _loadEnvFile();
     final values = _parse(envText);
     return AppConfig(
-      appName: values['APP_NAME'] ?? 'Easy Gym Life',
+      appName: values['APP_NAME'] ?? 'Easy Gym Life (EGL)',
       apiScheme: values['API_SCHEME'] ?? 'http',
       apiHost: values['API_HOST'] ?? 'localhost',
       apiPort: values['API_PORT'] ?? '3000',
       dbName: values['DB_NAME'] ?? 'easy_gym_life',
       dbUser: values['DB_USER'] ?? 'app_user',
-      jwtIssuer: values['JWT_ISSUER'] ?? 'gim-backend',
+      jwtIssuer: values['JWT_ISSUER'] ?? 'egl-auth-service',
       businessPortalLabel:
           values['BUSINESS_PORTAL_LABEL'] ?? 'Business Dashboard',
       gimPortalLabel:
-          values['GIM_PORTAL_LABEL'] ?? 'Easy Gym Life Member Dashboard',
+          values['GIM_PORTAL_LABEL'] ?? 'Easy Gym Life (EGL) Member Dashboard',
     );
   }
 
@@ -1385,43 +1385,703 @@ class GimUserDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _DashboardFrame(
-      title: config.gimPortalLabel,
-      subtitle:
-          'Easy Gym Life members are routed here for planning, scheduling, workouts, and day-to-day gym tools.',
-      accent: const Color(0xFF8FD8FF),
-      currentUser: currentUser,
-      config: config,
-      backendToken: backendToken,
-      onLogout: onLogout,
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFE7ECE8), Color(0xFFD8DFDA), Color(0xFFC8D1CC)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth >= 980;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1120),
+                    child: Container(
+                      padding: EdgeInsets.all(isWide ? 26 : 18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4DAD6).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(color: Colors.white54),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x22000000),
+                            blurRadius: 24,
+                            offset: Offset(0, 14),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _MemberDashboardHeader(
+                            currentUser: currentUser,
+                            onLogout: onLogout,
+                          ),
+                          const SizedBox(height: 20),
+                          _MemberWelcomeStrip(currentUser: currentUser),
+                          const SizedBox(height: 18),
+                          if (isWide)
+                            _MemberDashboardWide(currentUser: currentUser)
+                          else
+                            _MemberDashboardStacked(currentUser: currentUser),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberDashboardHeader extends StatelessWidget {
+  const _MemberDashboardHeader({
+    required this.currentUser,
+    required this.onLogout,
+  });
+
+  final AppUser currentUser;
+  final VoidCallback onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
-        const _MetricCard(
-          title: 'Workout Plan',
-          value: 'Upper Body',
-          detail:
-              'This space can surface the current training plan for the member.',
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: const Color(0xFFC8DEC9),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.fitness_center_rounded,
+            color: Color(0xFF0D5B34),
+          ),
         ),
-        const _MetricCard(
-          title: 'Schedule',
-          value: '6:30 PM',
-          detail:
-              'Class bookings, coaching sessions, or reminders can appear here.',
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'Easy Gym Life',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: const Color(0xFF153D31),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ),
-        const _MetricCard(
-          title: 'Calendar',
-          value: '4 Sessions',
-          detail:
-              'A lighter member dashboard can focus on consistency, workouts, and upcoming activity.',
-        ),
-        const _MetricCard(
-          title: 'Consistency',
-          value: '12 Days',
-          detail:
-              'This can later track a continuous attendance streak or weekly consistency goal.',
+        OutlinedButton.icon(
+          onPressed: onLogout,
+          icon: const Icon(Icons.logout_rounded, size: 18),
+          label: const Text('Log out'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF173A30),
+            side: const BorderSide(color: Color(0xFF97AAA0)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         ),
       ],
     );
   }
+}
+
+class _MemberWelcomeStrip extends StatelessWidget {
+  const _MemberWelcomeStrip({required this.currentUser});
+
+  final AppUser currentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      decoration: _memberPanelDecoration(backgroundColor: Colors.white),
+      child: Text(
+        'Welcome back, ${currentUser.displayName.split(' ').first}.',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Color(0xFF0D4838),
+          fontSize: 17,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _MemberDashboardWide extends StatelessWidget {
+  const _MemberDashboardWide({required this.currentUser});
+
+  final AppUser currentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 220,
+                child: _MemberInfoCard(currentUser: currentUser),
+              ),
+              const SizedBox(width: 18),
+              const Expanded(flex: 2, child: _MemberCalendarCard()),
+              const SizedBox(width: 18),
+              const Expanded(child: _MemberPlanCard()),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: const [
+              Expanded(child: _MemberTodayWorkoutCard()),
+              SizedBox(width: 18),
+              Expanded(child: _MemberScheduleCard()),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Expanded(flex: 3, child: _MemberWorkoutLogCard()),
+            SizedBox(width: 18),
+            SizedBox(width: 210, child: _MemberFocusCard()),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MemberDashboardStacked extends StatelessWidget {
+  const _MemberDashboardStacked({required this.currentUser});
+
+  final AppUser currentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _MemberInfoCard(currentUser: currentUser),
+        const SizedBox(height: 14),
+        const _MemberCalendarCard(),
+        const SizedBox(height: 14),
+        const _MemberPlanCard(),
+        const SizedBox(height: 14),
+        const _MemberTodayWorkoutCard(),
+        const SizedBox(height: 14),
+        const _MemberScheduleCard(),
+        const SizedBox(height: 14),
+        const _MemberWorkoutLogCard(),
+        const SizedBox(height: 14),
+        const _MemberFocusCard(),
+      ],
+    );
+  }
+}
+
+class _MemberInfoCard extends StatelessWidget {
+  const _MemberInfoCard({required this.currentUser});
+
+  final AppUser currentUser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: _memberPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _MemberPill(label: 'USER INFO'),
+          const SizedBox(height: 28),
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: const Color(0xFFDDE9DF),
+            child: Text(
+              currentUser.displayName.characters.first.toUpperCase(),
+              style: const TextStyle(
+                color: Color(0xFF174D39),
+                fontWeight: FontWeight.w900,
+                fontSize: 22,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            currentUser.displayName,
+            style: const TextStyle(
+              color: Color(0xFF111D19),
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            currentUser.email,
+            style: const TextStyle(
+              color: Color(0xFF416158),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberCalendarCard extends StatelessWidget {
+  const _MemberCalendarCard();
+
+  @override
+  Widget build(BuildContext context) {
+    const days = [
+      ('S', '23', false),
+      ('M', '24', true),
+      ('T', '25', true),
+      ('W', '26', false),
+      ('T', '27', true),
+      ('F', '28', false),
+      ('S', '29', false),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _memberPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Expanded(
+                child: Text(
+                  'Calendar',
+                  style: TextStyle(
+                    color: Color(0xFF111D19),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              _MemberPill(label: '3 PLANNED'),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              for (final day in days)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: _CalendarDayTile(
+                      day: day.$1,
+                      date: day.$2,
+                      active: day.$3,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Next workout: Today at 6:30 PM',
+            style: TextStyle(
+              color: Color(0xFF0E4B39),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CalendarDayTile extends StatelessWidget {
+  const _CalendarDayTile({
+    required this.day,
+    required this.date,
+    required this.active,
+  });
+
+  final String day;
+  final String date;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 74,
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFFE3F0E5) : const Color(0xFFF8FAF8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: active ? const Color(0xFF78A989) : const Color(0xFFE4EAE6),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            day,
+            style: const TextStyle(
+              color: Color(0xFF5D746B),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            date,
+            style: const TextStyle(
+              color: Color(0xFF111D19),
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberPlanCard extends StatelessWidget {
+  const _MemberPlanCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _MemberActionCard(
+      label: 'PLAN AHEAD',
+      title: 'My Schedule',
+      body: 'Keep future workout days separate from what you log.',
+      icon: Icons.event_available_rounded,
+    );
+  }
+}
+
+class _MemberTodayWorkoutCard extends StatelessWidget {
+  const _MemberTodayWorkoutCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _MemberActionCard(
+      label: "TODAY'S PLAN",
+      title: 'Upper Body',
+      body: 'Bench press, rows, shoulder press, and curls are queued.',
+      icon: Icons.assignment_turned_in_rounded,
+    );
+  }
+}
+
+class _MemberScheduleCard extends StatelessWidget {
+  const _MemberScheduleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _MemberActionCard(
+      label: 'PLAN AHEAD',
+      title: 'My Schedule',
+      body: '6:30 PM strength block with a short mobility cooldown.',
+      icon: Icons.calendar_month_rounded,
+    );
+  }
+}
+
+class _MemberWorkoutLogCard extends StatelessWidget {
+  const _MemberWorkoutLogCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 300,
+      padding: const EdgeInsets.all(22),
+      decoration: _memberPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Expanded(
+                child: Text(
+                  'Workout Log',
+                  style: TextStyle(
+                    color: Color(0xFF111D19),
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              _MemberPill(label: 'RECENT SETS'),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Expanded(
+            child: CustomPaint(
+              painter: _WorkoutLogPainter(),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Row(
+            children: [
+              Expanded(
+                child: _WorkoutLogStat(label: 'Workouts', value: '11'),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: _WorkoutLogStat(label: 'Exercises', value: '7'),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: _WorkoutLogStat(label: 'Streak', value: '12d'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberFocusCard extends StatelessWidget {
+  const _MemberFocusCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 300,
+      padding: const EdgeInsets.all(18),
+      decoration: _memberPanelDecoration(),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _MemberPill(label: 'FOCUS'),
+          SizedBox(height: 16),
+          Icon(Icons.local_fire_department_rounded, color: Color(0xFF0E6A42)),
+          SizedBox(height: 14),
+          Text(
+            'Stay steady',
+            style: TextStyle(
+              color: Color(0xFF111D19),
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Log the workout after you finish. Notes beat perfect data.',
+            style: TextStyle(
+              color: Color(0xFF365B50),
+              height: 1.35,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Spacer(),
+          Text(
+            'Recovery reminder at 8:15 PM',
+            style: TextStyle(
+              color: Color(0xFF0E4B39),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberActionCard extends StatelessWidget {
+  const _MemberActionCard({
+    required this.label,
+    required this.title,
+    required this.body,
+    required this.icon,
+  });
+
+  final String label;
+  final String title;
+  final String body;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 170),
+      padding: const EdgeInsets.all(22),
+      decoration: _memberPanelDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _MemberPill(label: label),
+              const Spacer(),
+              Icon(icon, color: const Color(0xFF0E6A42)),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF111D19),
+              fontSize: 27,
+              fontWeight: FontWeight.w900,
+              height: 1.02,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            body,
+            style: const TextStyle(
+              color: Color(0xFF0E4B39),
+              fontWeight: FontWeight.w800,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberPill extends StatelessWidget {
+  const _MemberPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE7EFEB),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFF0D4838),
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _WorkoutLogStat extends StatelessWidget {
+  const _WorkoutLogStat({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F8F6),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF416158),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF111D19),
+              fontSize: 21,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WorkoutLogPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = const Color(0xFFD9E4DC)
+      ..strokeWidth = 1;
+    final fillPaint = Paint()
+      ..color = const Color(0xFFE5F0E3)
+      ..style = PaintingStyle.fill;
+    final linePaint = Paint()
+      ..color = const Color(0xFF0C5A40)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    final dotPaint = Paint()..color = const Color(0xFF0C5A40);
+
+    for (var i = 1; i <= 3; i++) {
+      final y = size.height * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final points = [
+      Offset(0, size.height * 0.68),
+      Offset(size.width * 0.24, size.height * 0.44),
+      Offset(size.width * 0.50, size.height * 0.55),
+      Offset(size.width * 0.74, size.height * 0.28),
+      Offset(size.width, size.height * 0.34),
+    ];
+
+    final fillPath = Path()..moveTo(points.first.dx, size.height);
+    for (final point in points) {
+      fillPath.lineTo(point.dx, point.dy);
+    }
+    fillPath.lineTo(size.width, size.height);
+    fillPath.close();
+    canvas.drawPath(fillPath, fillPaint);
+
+    final linePath = Path()..moveTo(points.first.dx, points.first.dy);
+    for (final point in points.skip(1)) {
+      linePath.lineTo(point.dx, point.dy);
+    }
+    canvas.drawPath(linePath, linePaint);
+
+    for (final point in points) {
+      canvas.drawCircle(point, 5, dotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+BoxDecoration _memberPanelDecoration({Color backgroundColor = Colors.white}) {
+  return BoxDecoration(
+    color: backgroundColor,
+    borderRadius: BorderRadius.circular(18),
+    border: Border.all(color: const Color(0xFFE7ECE8)),
+  );
 }
 
 class _BusinessSidebar extends StatelessWidget {
@@ -2723,7 +3383,7 @@ class _DemoAccountPanel extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Member demo: member@easygymlife.app / GimUser123!',
+            'Member demo: member@easygymlife.app / EGLUser123!',
             style: TextStyle(color: Color(0xFFCAE0D7)),
           ),
           SizedBox(height: 10),

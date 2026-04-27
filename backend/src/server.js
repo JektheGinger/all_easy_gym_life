@@ -29,7 +29,7 @@ const dbConfig = {
 const jwtConfig = {
   secret: requireEnv('JWT_SECRET'),
   expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-  issuer: process.env.JWT_ISSUER || 'gim-auth-service',
+  issuer: process.env.JWT_ISSUER || 'egl-auth-service',
 };
 
 const pool = new Pool({
@@ -57,7 +57,7 @@ app.get('/', (_req, res) => {
         <head>
           <meta charset="utf-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1" />
-          <title>GIM Backend</title>
+          <title>Easy Gym Life (EGL) Backend</title>
           <style>
             body {
               margin: 0;
@@ -99,7 +99,7 @@ app.get('/', (_req, res) => {
         <body>
           <div class="wrap">
             <div class="card">
-              <h1>GIM Access Backend Is Running</h1>
+              <h1>Easy Gym Life (EGL) Backend Is Running</h1>
               <p>
                 This Express server is the backend API for the Flutter app. It handles
                 authentication, JWTs, database access, and future analytics or
@@ -133,14 +133,14 @@ app.get('/api/health', async (_req, res) => {
 
     res.status(200).json({
       status: 'ok',
-      api: 'gim-access-backend',
+      api: 'easy-gym-life-backend',
       database: 'connected',
     });
   } catch (error) {
     console.error('Health check failed:', error);
     res.status(500).json({
       status: 'error',
-      api: 'gim-access-backend',
+      api: 'easy-gym-life-backend',
       database: 'unreachable',
     });
   }
@@ -286,5 +286,5 @@ app.use((req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`GIM backend running on http://localhost:${port}`);
+  console.log(`Easy Gym Life (EGL) backend running on http://localhost:${port}`);
 });

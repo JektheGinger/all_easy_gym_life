@@ -28,14 +28,14 @@ async function seed() {
       displayName: 'Fit District Operations',
     },
     {
-      email: 'member@gimlife.app',
-      password: 'GimUser123!',
+      email: 'member@easygymlife.app',
+      password: 'EGLUser123!',
       role: 'gim',
       displayName: 'Jordan Member',
     },
     {
-      email: 'welcome@gimlife.app',
-      password: 'GimUser123!',
+      email: 'welcome@easygymlife.app',
+      password: 'EGLUser123!',
       role: 'gim',
       displayName: 'Taylor Welcome',
     },

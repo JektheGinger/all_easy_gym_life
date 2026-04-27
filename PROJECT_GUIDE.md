@@ -28,15 +28,15 @@ The app reads non-sensitive config from `assets/config/app.env`. A starter templ
 Example values:
 
 ```env
-APP_NAME=Easy Gym Life
+APP_NAME=Easy Gym Life (EGL)
 API_SCHEME=http
 API_HOST=localhost
 API_PORT=3000
 DB_NAME=easy_gym_life
 DB_USER=app_user
-JWT_ISSUER=gim-auth-service
+JWT_ISSUER=egl-auth-service
 BUSINESS_PORTAL_LABEL=Business Dashboard
-GIM_PORTAL_LABEL=Easy Gym Life Member Dashboard
+GIM_PORTAL_LABEL=Easy Gym Life (EGL) Member Dashboard
 ```
 
 Important: do not place a real JWT signing secret in the Flutter client. Keep signing and token issuance on the backend.
@@ -44,7 +44,7 @@ Important: do not place a real JWT signing secret in the Flutter client. Keep si
 ## Public Demo Accounts
 
 - Business demo: `owner@iron-temple.com` / `Business123!`
-- Member demo: `member@easygymlife.app` / `GimUser123!`
+- Member demo: `member@easygymlife.app` / `EGLUser123!`
 
 These are intentionally public demo-only application accounts. Do not reuse them for real environments.
 
