@@ -112,6 +112,18 @@ class _GimAccessAppState extends State<GimAccessApp> {
 
 enum UserRole { business, gim }
 
+class _EglPastels {
+  static const ink = Color(0xFF10231D);
+  static const mutedInk = Color(0xFF47675D);
+  static const green = Color(0xFFCFEBD8);
+  static const greenStrong = Color(0xFF4FBA72);
+  static const blue = Color(0xFFD8EAFB);
+  static const blueStrong = Color(0xFF4E92C7);
+  static const white = Color(0xFFFBFDFB);
+  static const shell = Color(0xFFE6ECE8);
+  static const border = Color(0xFFD9E6DE);
+}
+
 UserRole userRoleFromApi(String value) {
   switch (value.toLowerCase()) {
     case 'business':
@@ -359,10 +371,10 @@ class _LoginPageState extends State<LoginPage> {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF102A22),
+        backgroundColor: _EglPastels.white,
         title: const Text('Account onboarding'),
         content: const Text(
-          'The next production step would be a backend signup or business onboarding flow handled by the Express API.',
+          'Account creation will connect here when member and business onboarding are ready.',
         ),
         actions: [
           TextButton(
@@ -380,9 +392,9 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF03120F), Color(0xFF08231C), Color(0xFF041611)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            colors: [_EglPastels.white, _EglPastels.blue, Color(0xFFEAF5FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: SafeArea(
@@ -394,12 +406,12 @@ class _LoginPageState extends State<LoginPage> {
                 child: Container(
                   padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D3835).withValues(alpha: 0.95),
+                    color: _EglPastels.white.withValues(alpha: 0.96),
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: const Color(0xFF5D7369)),
+                    border: Border.all(color: _EglPastels.border),
                     boxShadow: const [
                       BoxShadow(
-                        color: Color(0x44000000),
+                        color: Color(0x18000000),
                         blurRadius: 30,
                         offset: Offset(0, 20),
                       ),
@@ -410,23 +422,7 @@ class _LoginPageState extends State<LoginPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 8),
-                        Text(
-                          widget.config.appName,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                color: const Color(0xFFC9FFD8),
-                                fontWeight: FontWeight.w800,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Flutter handles the interface. Express handles login, JWTs, and data.',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(color: const Color(0xFF72DD98)),
-                        ),
+                        const _EglLogoMark(),
                         const SizedBox(height: 28),
                         const _FieldLabel(text: 'Email'),
                         const SizedBox(height: 8),
@@ -463,7 +459,7 @@ class _LoginPageState extends State<LoginPage> {
                           Text(
                             _errorText!,
                             style: const TextStyle(
-                              color: Color(0xFFFFA9A9),
+                              color: Color(0xFFC8504B),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -472,8 +468,8 @@ class _LoginPageState extends State<LoginPage> {
                         FilledButton(
                           onPressed: _isLoading ? null : _submit,
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF5BC47F),
-                            foregroundColor: const Color(0xFF052013),
+                            backgroundColor: _EglPastels.greenStrong,
+                            foregroundColor: _EglPastels.white,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.w800,
@@ -497,8 +493,8 @@ class _LoginPageState extends State<LoginPage> {
                         OutlinedButton(
                           onPressed: _showCreateAccountDialog,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFC9FFD8),
-                            side: const BorderSide(color: Color(0xFFC9FFD8)),
+                            foregroundColor: _EglPastels.ink,
+                            side: const BorderSide(color: _EglPastels.border),
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -518,7 +514,7 @@ class _LoginPageState extends State<LoginPage> {
                           icon: const Icon(Icons.storefront_rounded),
                           label: const Text('Enter Business Demo Dashboard'),
                           style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF8BF0B4),
+                            foregroundColor: _EglPastels.ink,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -534,7 +530,7 @@ class _LoginPageState extends State<LoginPage> {
                           icon: const Icon(Icons.calendar_month_rounded),
                           label: const Text('Enter Member Demo Dashboard'),
                           style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFF9EE4FF),
+                            foregroundColor: _EglPastels.blueStrong,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.w700,
@@ -544,10 +540,10 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          'Use the demo dashboard buttons when backend authentication is still being set up and you need to preview the business or member experience.',
+                          'Preview the business or member experience with demo access.',
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: const Color(0xFF9FB7AE)),
+                              ?.copyWith(color: _EglPastels.mutedInk),
                         ),
                         const SizedBox(height: 24),
                         _ConfigPanel(config: widget.config),
@@ -600,6 +596,26 @@ class DashboardRouter extends StatelessWidget {
       auditStore: auditStore,
       backendToken: backendToken,
       onLogout: onLogout,
+    );
+  }
+}
+
+class _EglLogoMark extends StatelessWidget {
+  const _EglLogoMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SizedBox(
+        width: 360,
+        child: AspectRatio(
+          aspectRatio: 562 / 390,
+          child: Image.asset(
+            'Project Pictures/EGL Company Logo.png',
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -660,7 +676,7 @@ class _BusinessDashboardState extends State<BusinessDashboard> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF071711), Color(0xFF0E251C), Color(0xFF06130F)],
+            colors: [_EglPastels.white, _EglPastels.blue, _EglPastels.green],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -755,7 +771,7 @@ class _BusinessDashboardState extends State<BusinessDashboard> {
                               Text(
                                 _tabSubtitle,
                                 style: const TextStyle(
-                                  color: Color(0xFFBFD2CA),
+                                  color: _EglPastels.mutedInk,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1389,7 +1405,7 @@ class GimUserDashboard extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFE7ECE8), Color(0xFFD8DFDA), Color(0xFFC8D1CC)],
+            colors: [_EglPastels.white, _EglPastels.green, _EglPastels.blue],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -1407,7 +1423,7 @@ class GimUserDashboard extends StatelessWidget {
                     child: Container(
                       padding: EdgeInsets.all(isWide ? 26 : 18),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFD4DAD6).withValues(alpha: 0.92),
+                        color: _EglPastels.shell.withValues(alpha: 0.94),
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(color: Colors.white54),
                         boxShadow: const [
@@ -1463,12 +1479,12 @@ class _MemberDashboardHeader extends StatelessWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: const Color(0xFFC8DEC9),
+            color: _EglPastels.green,
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
             Icons.fitness_center_rounded,
-            color: Color(0xFF0D5B34),
+            color: _EglPastels.greenStrong,
           ),
         ),
         const SizedBox(width: 12),
@@ -1476,7 +1492,7 @@ class _MemberDashboardHeader extends StatelessWidget {
           child: Text(
             'Easy Gym Life',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: const Color(0xFF153D31),
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1486,8 +1502,8 @@ class _MemberDashboardHeader extends StatelessWidget {
           icon: const Icon(Icons.logout_rounded, size: 18),
           label: const Text('Log out'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF173A30),
-            side: const BorderSide(color: Color(0xFF97AAA0)),
+            foregroundColor: _EglPastels.ink,
+            side: const BorderSide(color: _EglPastels.border),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
@@ -1507,12 +1523,12 @@ class _MemberWelcomeStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
-      decoration: _memberPanelDecoration(backgroundColor: Colors.white),
+      decoration: _memberPanelDecoration(backgroundColor: _EglPastels.white),
       child: Text(
         'Welcome back, ${currentUser.displayName.split(' ').first}.',
         textAlign: TextAlign.center,
         style: const TextStyle(
-          color: Color(0xFF0D4838),
+          color: _EglPastels.ink,
           fontSize: 17,
           fontWeight: FontWeight.w800,
         ),
@@ -1614,11 +1630,11 @@ class _MemberInfoCard extends StatelessWidget {
           const SizedBox(height: 28),
           CircleAvatar(
             radius: 28,
-            backgroundColor: const Color(0xFFDDE9DF),
+            backgroundColor: _EglPastels.green,
             child: Text(
               currentUser.displayName.characters.first.toUpperCase(),
               style: const TextStyle(
-                color: Color(0xFF174D39),
+                color: _EglPastels.ink,
                 fontWeight: FontWeight.w900,
                 fontSize: 22,
               ),
@@ -1628,7 +1644,7 @@ class _MemberInfoCard extends StatelessWidget {
           Text(
             currentUser.displayName,
             style: const TextStyle(
-              color: Color(0xFF111D19),
+              color: _EglPastels.ink,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -1637,7 +1653,7 @@ class _MemberInfoCard extends StatelessWidget {
           Text(
             currentUser.email,
             style: const TextStyle(
-              color: Color(0xFF416158),
+              color: _EglPastels.mutedInk,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1674,7 +1690,7 @@ class _MemberCalendarCard extends StatelessWidget {
                 child: Text(
                   'Calendar',
                   style: TextStyle(
-                    color: Color(0xFF111D19),
+                    color: _EglPastels.ink,
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1703,7 +1719,7 @@ class _MemberCalendarCard extends StatelessWidget {
           const Text(
             'Next workout: Today at 6:30 PM',
             style: TextStyle(
-              color: Color(0xFF0E4B39),
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1729,10 +1745,10 @@ class _CalendarDayTile extends StatelessWidget {
     return Container(
       height: 74,
       decoration: BoxDecoration(
-        color: active ? const Color(0xFFE3F0E5) : const Color(0xFFF8FAF8),
+        color: active ? _EglPastels.green : _EglPastels.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: active ? const Color(0xFF78A989) : const Color(0xFFE4EAE6),
+          color: active ? _EglPastels.greenStrong : _EglPastels.border,
         ),
       ),
       child: Column(
@@ -1741,7 +1757,7 @@ class _CalendarDayTile extends StatelessWidget {
           Text(
             day,
             style: const TextStyle(
-              color: Color(0xFF5D746B),
+              color: _EglPastels.mutedInk,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -1749,7 +1765,7 @@ class _CalendarDayTile extends StatelessWidget {
           Text(
             date,
             style: const TextStyle(
-              color: Color(0xFF111D19),
+              color: _EglPastels.ink,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -1820,7 +1836,7 @@ class _MemberWorkoutLogCard extends StatelessWidget {
                 child: Text(
                   'Workout Log',
                   style: TextStyle(
-                    color: Color(0xFF111D19),
+                    color: _EglPastels.ink,
                     fontSize: 30,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1872,12 +1888,15 @@ class _MemberFocusCard extends StatelessWidget {
         children: [
           _MemberPill(label: 'FOCUS'),
           SizedBox(height: 16),
-          Icon(Icons.local_fire_department_rounded, color: Color(0xFF0E6A42)),
+          Icon(
+            Icons.local_fire_department_rounded,
+            color: _EglPastels.greenStrong,
+          ),
           SizedBox(height: 14),
           Text(
             'Stay steady',
             style: TextStyle(
-              color: Color(0xFF111D19),
+              color: _EglPastels.ink,
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
@@ -1886,7 +1905,7 @@ class _MemberFocusCard extends StatelessWidget {
           Text(
             'Log the workout after you finish. Notes beat perfect data.',
             style: TextStyle(
-              color: Color(0xFF365B50),
+              color: _EglPastels.mutedInk,
               height: 1.35,
               fontWeight: FontWeight.w700,
             ),
@@ -1895,7 +1914,7 @@ class _MemberFocusCard extends StatelessWidget {
           Text(
             'Recovery reminder at 8:15 PM',
             style: TextStyle(
-              color: Color(0xFF0E4B39),
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w900,
             ),
           ),
@@ -1931,14 +1950,14 @@ class _MemberActionCard extends StatelessWidget {
             children: [
               _MemberPill(label: label),
               const Spacer(),
-              Icon(icon, color: const Color(0xFF0E6A42)),
+              Icon(icon, color: _EglPastels.greenStrong),
             ],
           ),
           const SizedBox(height: 18),
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFF111D19),
+              color: _EglPastels.ink,
               fontSize: 27,
               fontWeight: FontWeight.w900,
               height: 1.02,
@@ -1948,7 +1967,7 @@ class _MemberActionCard extends StatelessWidget {
           Text(
             body,
             style: const TextStyle(
-              color: Color(0xFF0E4B39),
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w800,
               height: 1.35,
             ),
@@ -1969,13 +1988,13 @@ class _MemberPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFE7EFEB),
+        color: _EglPastels.blue,
         borderRadius: BorderRadius.circular(99),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFF0D4838),
+          color: _EglPastels.ink,
           fontSize: 12,
           fontWeight: FontWeight.w900,
           letterSpacing: 1,
@@ -1996,7 +2015,7 @@ class _WorkoutLogStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F8F6),
+        color: _EglPastels.green,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -2005,7 +2024,7 @@ class _WorkoutLogStat extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFF416158),
+              color: _EglPastels.mutedInk,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -2013,7 +2032,7 @@ class _WorkoutLogStat extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              color: Color(0xFF111D19),
+              color: _EglPastels.ink,
               fontSize: 21,
               fontWeight: FontWeight.w900,
             ),
@@ -2028,17 +2047,17 @@ class _WorkoutLogPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final gridPaint = Paint()
-      ..color = const Color(0xFFD9E4DC)
+      ..color = _EglPastels.border
       ..strokeWidth = 1;
     final fillPaint = Paint()
-      ..color = const Color(0xFFE5F0E3)
+      ..color = _EglPastels.green
       ..style = PaintingStyle.fill;
     final linePaint = Paint()
-      ..color = const Color(0xFF0C5A40)
+      ..color = _EglPastels.greenStrong
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
-    final dotPaint = Paint()..color = const Color(0xFF0C5A40);
+    final dotPaint = Paint()..color = _EglPastels.greenStrong;
 
     for (var i = 1; i <= 3; i++) {
       final y = size.height * i / 4;
@@ -2076,11 +2095,13 @@ class _WorkoutLogPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-BoxDecoration _memberPanelDecoration({Color backgroundColor = Colors.white}) {
+BoxDecoration _memberPanelDecoration({
+  Color backgroundColor = _EglPastels.white,
+}) {
   return BoxDecoration(
     color: backgroundColor,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: const Color(0xFFE7ECE8)),
+    border: Border.all(color: _EglPastels.border),
   );
 }
 
@@ -2112,7 +2133,7 @@ class _BusinessSidebar extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: _panelDecoration(borderColor: const Color(0xFF335A4A)),
+      decoration: _memberPanelDecoration(backgroundColor: _EglPastels.white),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -2150,7 +2171,7 @@ class _BusinessNavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFF1A5BFF) : const Color(0xFF16231F),
+      color: selected ? _EglPastels.green : _EglPastels.white,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         onTap: onTap,
@@ -2165,14 +2186,17 @@ class _BusinessNavButton extends StatelessWidget {
                 ? MainAxisAlignment.center
                 : MainAxisAlignment.start,
             children: [
-              Icon(icon, color: Colors.white),
+              Icon(
+                icon,
+                color: selected ? _EglPastels.ink : _EglPastels.mutedInk,
+              ),
               if (!isCompact) ...[
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     label,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: selected ? _EglPastels.ink : _EglPastels.mutedInk,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -2202,17 +2226,14 @@ class _BusinessHeaderCard extends StatelessWidget {
     return Container(
       width: width,
       padding: const EdgeInsets.all(18),
-      decoration: _panelDecoration(
-        backgroundColor: const Color(0xFF173226),
-        borderColor: const Color(0xFF3F775B),
-      ),
+      decoration: _memberPanelDecoration(backgroundColor: _EglPastels.white),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             companyName,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.white,
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -2220,14 +2241,14 @@ class _BusinessHeaderCard extends StatelessWidget {
           Text(
             currentUser.displayName,
             style: const TextStyle(
-              color: Color(0xFFBAF7D2),
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             currentUser.email,
-            style: const TextStyle(color: Color(0xFFCAE0D7)),
+            style: const TextStyle(color: _EglPastels.mutedInk),
           ),
         ],
       ),
@@ -2245,17 +2266,14 @@ class _BusinessTbdCard extends StatelessWidget {
     return Container(
       width: width,
       padding: const EdgeInsets.all(18),
-      decoration: _panelDecoration(
-        backgroundColor: const Color(0xFF173226),
-        borderColor: const Color(0xFF3F775B),
-      ),
+      decoration: _memberPanelDecoration(backgroundColor: _EglPastels.green),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Priority Metrics',
             style: TextStyle(
-              color: Colors.white,
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
@@ -2263,7 +2281,7 @@ class _BusinessTbdCard extends StatelessWidget {
           SizedBox(height: 10),
           Text(
             'TBD: occupancy spikes, class utilization, machine downtime, and chain-wide exceptions can live here.',
-            style: TextStyle(color: Color(0xFFCAE0D7), height: 1.45),
+            style: TextStyle(color: _EglPastels.mutedInk, height: 1.45),
           ),
         ],
       ),
@@ -2282,10 +2300,7 @@ class _BusinessActionCard extends StatelessWidget {
     return Container(
       width: width,
       padding: const EdgeInsets.all(18),
-      decoration: _panelDecoration(
-        backgroundColor: const Color(0xFF173226),
-        borderColor: const Color(0xFF3F775B),
-      ),
+      decoration: _memberPanelDecoration(backgroundColor: _EglPastels.blue),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -2293,12 +2308,20 @@ class _BusinessActionCard extends StatelessWidget {
             onPressed: () {},
             icon: const Icon(Icons.settings_rounded),
             label: const Text('Settings'),
+            style: FilledButton.styleFrom(
+              backgroundColor: _EglPastels.white,
+              foregroundColor: _EglPastels.ink,
+            ),
           ),
           const SizedBox(height: 10),
           FilledButton.tonalIcon(
             onPressed: onLogout,
             icon: const Icon(Icons.logout_rounded),
             label: const Text('Log out'),
+            style: FilledButton.styleFrom(
+              backgroundColor: _EglPastels.greenStrong,
+              foregroundColor: _EglPastels.white,
+            ),
           ),
         ],
       ),
@@ -2320,7 +2343,7 @@ class _SourceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFF9F342B) : const Color(0xFF40231F),
+      color: selected ? _EglPastels.blue : _EglPastels.white,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -2330,7 +2353,7 @@ class _SourceChip extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: Colors.white,
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -2359,10 +2382,7 @@ class _BusinessContentPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(22),
-      decoration: _panelDecoration(
-        backgroundColor: const Color(0xFF1547D8),
-        borderColor: const Color(0xFF6FA2FF),
-      ),
+      decoration: _memberPanelDecoration(backgroundColor: _EglPastels.shell),
       child: _buildSelectedContent(),
     );
   }
@@ -2405,14 +2425,14 @@ class _BusinessHomeContent extends StatelessWidget {
         Text(
           'Home Overview',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
+            color: _EglPastels.ink,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Chain summary for $selectedSource. This is the landing view for business partners.',
-          style: const TextStyle(color: Color(0xFFD9E6FF)),
+          style: const TextStyle(color: _EglPastels.mutedInk),
         ),
         const SizedBox(height: 18),
         const Wrap(
@@ -2439,9 +2459,8 @@ class _BusinessHomeContent extends StatelessWidget {
         const SizedBox(height: 18),
         Expanded(
           child: Container(
-            decoration: _panelDecoration(
-              backgroundColor: const Color(0xFF10317D),
-              borderColor: const Color(0xFF5F96FF),
+            decoration: _memberPanelDecoration(
+              backgroundColor: _EglPastels.white,
             ),
             child: _LoginAuditCard(logins: logins),
           ),
@@ -2464,21 +2483,20 @@ class _BusinessVideoContent extends StatelessWidget {
         Text(
           'Video Feed',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
+            color: _EglPastels.ink,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Primary monitored view for $selectedSource.',
-          style: const TextStyle(color: Color(0xFFD9E6FF)),
+          style: const TextStyle(color: _EglPastels.mutedInk),
         ),
         const SizedBox(height: 18),
         Expanded(
           child: Container(
-            decoration: _panelDecoration(
-              backgroundColor: const Color(0xFF0A1F5F),
-              borderColor: const Color(0xFF5F96FF),
+            decoration: _memberPanelDecoration(
+              backgroundColor: _EglPastels.blue,
             ),
             child: const Center(
               child: Column(
@@ -2487,13 +2505,13 @@ class _BusinessVideoContent extends StatelessWidget {
                   Icon(
                     Icons.play_circle_fill_rounded,
                     size: 84,
-                    color: Color(0xFFA6C7FF),
+                    color: _EglPastels.blueStrong,
                   ),
                   SizedBox(height: 16),
                   Text(
                     'Live or processed video feed goes here',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: _EglPastels.ink,
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                     ),
@@ -2502,7 +2520,7 @@ class _BusinessVideoContent extends StatelessWidget {
                   Text(
                     'Future: camera stream, stick-figure overlay, occupancy count, and activity markers.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFFD9E6FF)),
+                    style: TextStyle(color: _EglPastels.mutedInk),
                   ),
                 ],
               ),
@@ -2534,14 +2552,14 @@ class _BusinessDataFilterContent extends StatelessWidget {
         Text(
           'Data Filter',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
+            color: _EglPastels.ink,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Filtered event snapshots for $selectedSource.',
-          style: const TextStyle(color: Color(0xFFD9E6FF)),
+          style: const TextStyle(color: _EglPastels.mutedInk),
         ),
         const SizedBox(height: 18),
         Wrap(
@@ -2557,15 +2575,14 @@ class _BusinessDataFilterContent extends StatelessWidget {
         const SizedBox(height: 18),
         Expanded(
           child: Container(
-            decoration: _panelDecoration(
-              backgroundColor: const Color(0xFF0F2C73),
-              borderColor: const Color(0xFF5F96FF),
+            decoration: _memberPanelDecoration(
+              backgroundColor: _EglPastels.white,
             ),
             child: ListView.separated(
               padding: const EdgeInsets.all(18),
               itemCount: rows.length,
               separatorBuilder: (_, _) =>
-                  const Divider(color: Color(0xFF4F78D3)),
+                  const Divider(color: _EglPastels.border),
               itemBuilder: (context, index) {
                 final row = rows[index];
                 return Row(
@@ -2574,14 +2591,14 @@ class _BusinessDataFilterContent extends StatelessWidget {
                       width: 72,
                       child: Text(
                         row.$1,
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: _EglPastels.mutedInk),
                       ),
                     ),
                     Expanded(
                       child: Text(
                         row.$2,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: _EglPastels.ink,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -2590,7 +2607,7 @@ class _BusinessDataFilterContent extends StatelessWidget {
                       width: 160,
                       child: Text(
                         row.$3,
-                        style: const TextStyle(color: Color(0xFFD9E6FF)),
+                        style: const TextStyle(color: _EglPastels.mutedInk),
                       ),
                     ),
                     SizedBox(
@@ -2599,7 +2616,7 @@ class _BusinessDataFilterContent extends StatelessWidget {
                         row.$4,
                         textAlign: TextAlign.right,
                         style: const TextStyle(
-                          color: Color(0xFFAEE6FF),
+                          color: _EglPastels.blueStrong,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -2635,14 +2652,14 @@ class _BusinessEquipmentContent extends StatelessWidget {
         Text(
           'Equipment Health',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
+            color: _EglPastels.ink,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Machine readiness for $selectedSource.',
-          style: const TextStyle(color: Color(0xFFD9E6FF)),
+          style: const TextStyle(color: _EglPastels.mutedInk),
         ),
         const SizedBox(height: 18),
         Expanded(
@@ -2653,9 +2670,8 @@ class _BusinessEquipmentContent extends StatelessWidget {
               final item = equipment[index];
               return Container(
                 padding: const EdgeInsets.all(16),
-                decoration: _panelDecoration(
-                  backgroundColor: const Color(0xFF0F2C73),
-                  borderColor: const Color(0xFF5F96FF),
+                decoration: _memberPanelDecoration(
+                  backgroundColor: _EglPastels.white,
                 ),
                 child: Row(
                   children: [
@@ -2663,7 +2679,7 @@ class _BusinessEquipmentContent extends StatelessWidget {
                       child: Text(
                         item.$1,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: _EglPastels.ink,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -2710,14 +2726,14 @@ class _BusinessInsightsContent extends StatelessWidget {
         Text(
           'Insights',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
+            color: _EglPastels.ink,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Movement analytics and congregation trends for $selectedSource.',
-          style: const TextStyle(color: Color(0xFFD9E6FF)),
+          style: const TextStyle(color: _EglPastels.mutedInk),
         ),
         const SizedBox(height: 18),
         const Wrap(
@@ -2744,9 +2760,8 @@ class _BusinessInsightsContent extends StatelessWidget {
         const SizedBox(height: 18),
         Expanded(
           child: Container(
-            decoration: _panelDecoration(
-              backgroundColor: const Color(0xFF0F2C73),
-              borderColor: const Color(0xFF5F96FF),
+            decoration: _memberPanelDecoration(
+              backgroundColor: _EglPastels.white,
             ),
             padding: const EdgeInsets.all(20),
             child: const Column(
@@ -2755,7 +2770,7 @@ class _BusinessInsightsContent extends StatelessWidget {
                 Text(
                   'Insight Summary',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _EglPastels.ink,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -2763,7 +2778,7 @@ class _BusinessInsightsContent extends StatelessWidget {
                 SizedBox(height: 12),
                 Text(
                   'This panel can hold charts for movement categories, congestion windows, and machine adjacency usage. For now it acts as the blueprint for the analytics area you described.',
-                  style: TextStyle(color: Color(0xFFD9E6FF), height: 1.5),
+                  style: TextStyle(color: _EglPastels.mutedInk, height: 1.5),
                 ),
               ],
             ),
@@ -2787,21 +2802,20 @@ class _BusinessMapContent extends StatelessWidget {
         Text(
           'Gym Map',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
+            color: _EglPastels.ink,
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Hot zones, dead zones, and machine status mapping for $selectedSource.',
-          style: const TextStyle(color: Color(0xFFD9E6FF)),
+          style: const TextStyle(color: _EglPastels.mutedInk),
         ),
         const SizedBox(height: 18),
         Expanded(
           child: Container(
-            decoration: _panelDecoration(
-              backgroundColor: const Color(0xFF0F2C73),
-              borderColor: const Color(0xFF5F96FF),
+            decoration: _memberPanelDecoration(
+              backgroundColor: _EglPastels.white,
             ),
             padding: const EdgeInsets.all(18),
             child: Column(
@@ -2809,9 +2823,9 @@ class _BusinessMapContent extends StatelessWidget {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF12396F),
+                      color: _EglPastels.blue,
                       borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: const Color(0xFF5F96FF)),
+                      border: Border.all(color: _EglPastels.border),
                     ),
                     child: Stack(
                       children: const [
@@ -2886,17 +2900,14 @@ class _BusinessStatTile extends StatelessWidget {
     return Container(
       width: 220,
       padding: const EdgeInsets.all(16),
-      decoration: _panelDecoration(
-        backgroundColor: const Color(0xFF0F2C73),
-        borderColor: const Color(0xFF5F96FF),
-      ),
+      decoration: _memberPanelDecoration(backgroundColor: _EglPastels.white),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFFD9E6FF),
+              color: _EglPastels.mutedInk,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -2904,13 +2915,13 @@ class _BusinessStatTile extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              color: _EglPastels.ink,
               fontSize: 28,
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 8),
-          Text(detail, style: const TextStyle(color: Color(0xFFAFC9FF))),
+          Text(detail, style: const TextStyle(color: _EglPastels.mutedInk)),
         ],
       ),
     );
@@ -2927,14 +2938,14 @@ class _FilterPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF244D9B),
+        color: _EglPastels.blue,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFF7EA9FF)),
+        border: Border.all(color: _EglPastels.border),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Colors.white,
+          color: _EglPastels.ink,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -2975,13 +2986,13 @@ class _LegendChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF23498F),
+        color: _EglPastels.green,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFFD9E6FF),
+          color: _EglPastels.ink,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -3330,17 +3341,17 @@ class _ConfigPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF24302C),
+        color: _EglPastels.blue,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF42564E)),
+        border: Border.all(color: _EglPastels.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Configured server',
+            'Connection details',
             style: TextStyle(
-              color: Color(0xFFC9FFD8),
+              color: _EglPastels.ink,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -3365,31 +3376,34 @@ class _DemoAccountPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1B2623),
+        color: _EglPastels.green,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF355048)),
+        border: Border.all(color: _EglPastels.border),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Public demo accounts',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            'Demo access',
+            style: TextStyle(
+              color: _EglPastels.ink,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           SizedBox(height: 10),
           Text(
             'Business demo: owner@iron-temple.com / Business123!',
-            style: TextStyle(color: Color(0xFFCAE0D7)),
+            style: TextStyle(color: _EglPastels.ink),
           ),
           SizedBox(height: 6),
           Text(
             'Member demo: member@easygymlife.app / EGLUser123!',
-            style: TextStyle(color: Color(0xFFCAE0D7)),
+            style: TextStyle(color: _EglPastels.ink),
           ),
           SizedBox(height: 10),
           Text(
-            'These are public demo-only app credentials. Do not reuse them in real environments.',
-            style: TextStyle(color: Color(0xFF97B6A9)),
+            'These are preview credentials for exploring the app experience.',
+            style: TextStyle(color: _EglPastels.mutedInk),
           ),
         ],
       ),
@@ -3407,7 +3421,7 @@ class _FieldLabel extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        color: Color(0xFFC9FFD8),
+        color: _EglPastels.ink,
         fontWeight: FontWeight.w700,
         fontSize: 18,
       ),
@@ -3440,11 +3454,22 @@ class _StyledInput extends StatelessWidget {
       decoration: InputDecoration(
         hintText: hintText,
         filled: true,
-        fillColor: const Color(0xFFDDE7F4),
-        hintStyle: const TextStyle(color: Color(0xFF5C6878)),
+        fillColor: _EglPastels.blue,
+        hintStyle: const TextStyle(color: _EglPastels.mutedInk),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: _EglPastels.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _EglPastels.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: _EglPastels.greenStrong,
+            width: 2,
+          ),
         ),
         errorStyle: const TextStyle(fontWeight: FontWeight.w600),
         contentPadding: const EdgeInsets.symmetric(
@@ -3453,7 +3478,7 @@ class _StyledInput extends StatelessWidget {
         ),
       ),
       style: const TextStyle(
-        color: Color(0xFF13202E),
+        color: _EglPastels.ink,
         fontWeight: FontWeight.w600,
       ),
     );
@@ -3478,7 +3503,7 @@ class _ConfigRow extends StatelessWidget {
             child: Text(
               '$label:',
               style: const TextStyle(
-                color: Color(0xFF97B6A9),
+                color: _EglPastels.mutedInk,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -3487,7 +3512,7 @@ class _ConfigRow extends StatelessWidget {
             child: Text(
               value,
               style: const TextStyle(
-                color: Colors.white,
+                color: _EglPastels.ink,
                 fontWeight: FontWeight.w600,
               ),
             ),
