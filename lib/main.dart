@@ -2796,6 +2796,10 @@ class _BusinessMapContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mapName = selectedSource == 'Iron Temple'
+        ? 'Iron Temple'
+        : 'Downtown';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2808,7 +2812,7 @@ class _BusinessMapContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Hot zones, dead zones, and machine status mapping for $selectedSource.',
+          'Hot zones, dead zones, and machine status mapping for $mapName.',
           style: const TextStyle(color: _EglPastels.mutedInk),
         ),
         const SizedBox(height: 18),
@@ -2820,51 +2824,7 @@ class _BusinessMapContent extends StatelessWidget {
             padding: const EdgeInsets.all(18),
             child: Column(
               children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: _EglPastels.blue,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: _EglPastels.border),
-                    ),
-                    child: Stack(
-                      children: const [
-                        Positioned(
-                          left: 30,
-                          top: 30,
-                          child: _MapZoneMarker(
-                            label: 'Entry Flow',
-                            color: Color(0xFFFF7B6B),
-                          ),
-                        ),
-                        Positioned(
-                          left: 180,
-                          top: 160,
-                          child: _MapZoneMarker(
-                            label: 'Weights',
-                            color: Color(0xFFF1D36B),
-                          ),
-                        ),
-                        Positioned(
-                          right: 50,
-                          top: 90,
-                          child: _MapZoneMarker(
-                            label: 'Cardio',
-                            color: Color(0xFF79E39A),
-                          ),
-                        ),
-                        Positioned(
-                          right: 90,
-                          bottom: 50,
-                          child: _MapZoneMarker(
-                            label: 'Studio',
-                            color: Color(0xFF79E39A),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                Expanded(child: _GymMapLayout(location: mapName)),
                 const SizedBox(height: 14),
                 const Wrap(
                   spacing: 12,
@@ -2880,6 +2840,464 @@ class _BusinessMapContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _GymMapLayout extends StatelessWidget {
+  const _GymMapLayout({required this.location});
+
+  final String location;
+
+  @override
+  Widget build(BuildContext context) {
+    final isIronTemple = location == 'Iron Temple';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAF8),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _EglPastels.border),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF3FC),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFC8DDEC)),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(46, 58, 46, 44),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: _EglPastels.blue.withValues(alpha: 0.32),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: _EglPastels.ink, width: 2),
+                ),
+              ),
+            ),
+          ),
+          if (isIronTemple)
+            const _IronTempleMapPlan()
+          else
+            const _DowntownMapPlan(),
+          if (isIronTemple) ...[
+            const _MapDoorMarker(
+              alignment: Alignment(-0.84, -0.78),
+              label: 'Entrance',
+              icon: Icons.login_rounded,
+              color: _EglPastels.greenStrong,
+            ),
+            const _MapDoorMarker(
+              alignment: Alignment(0.88, 0.78),
+              label: 'Exit',
+              icon: Icons.logout_rounded,
+              color: Color(0xFFFF7B6B),
+            ),
+          ] else ...[
+            const _MapDoorMarker(
+              alignment: Alignment(-0.86, -0.78),
+              label: 'Entrance',
+              icon: Icons.login_rounded,
+              color: _EglPastels.greenStrong,
+            ),
+            const _MapDoorMarker(
+              alignment: Alignment(0.88, -0.78),
+              label: 'Exit',
+              icon: Icons.logout_rounded,
+              color: Color(0xFFFF7B6B),
+            ),
+          ],
+          Positioned(left: 26, top: 24, child: _MapTitlePill(label: location)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DowntownMapPlan extends StatelessWidget {
+  const _DowntownMapPlan();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Stack(
+      children: [
+        _MapAreaBlock(
+          left: 0.13,
+          top: 0.19,
+          width: 0.22,
+          height: 0.19,
+          label: 'Free Weights',
+          icon: Icons.fitness_center_rounded,
+          statusLabel: 'Watch',
+          statusColor: Color(0xFFF1D36B),
+        ),
+        _MapAreaBlock(
+          left: 0.13,
+          top: 0.42,
+          width: 0.22,
+          height: 0.16,
+          label: 'Dumbbell Racks',
+          icon: Icons.fitness_center_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapAreaBlock(
+          left: 0.13,
+          top: 0.63,
+          width: 0.22,
+          height: 0.17,
+          label: 'Benches',
+          icon: Icons.event_seat_rounded,
+          statusLabel: 'Watch',
+          statusColor: Color(0xFFF1D36B),
+        ),
+        _MapAreaBlock(
+          left: 0.41,
+          top: 0.19,
+          width: 0.2,
+          height: 0.17,
+          label: 'Studio',
+          icon: Icons.self_improvement_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapAreaBlock(
+          left: 0.40,
+          top: 0.44,
+          width: 0.23,
+          height: 0.27,
+          label: 'Treadmills',
+          icon: Icons.directions_run_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapAreaBlock(
+          left: 0.69,
+          top: 0.19,
+          width: 0.21,
+          height: 0.18,
+          label: 'Cardio',
+          icon: Icons.monitor_heart_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapAreaBlock(
+          left: 0.69,
+          top: 0.43,
+          width: 0.21,
+          height: 0.17,
+          label: 'Leg Press',
+          icon: Icons.airline_seat_legroom_extra_rounded,
+          statusLabel: 'Issue',
+          statusColor: Color(0xFFFF7B6B),
+        ),
+        _MapAreaBlock(
+          left: 0.69,
+          top: 0.65,
+          width: 0.21,
+          height: 0.17,
+          label: 'Chest Press',
+          icon: Icons.accessibility_new_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapZoneMarker(
+          left: 0.29,
+          top: 0.18,
+          label: 'Entry Flow',
+          color: Color(0xFFFF7B6B),
+        ),
+      ],
+    );
+  }
+}
+
+class _IronTempleMapPlan extends StatelessWidget {
+  const _IronTempleMapPlan();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Stack(
+      children: [
+        _MapAreaBlock(
+          left: 0.12,
+          top: 0.22,
+          width: 0.19,
+          height: 0.45,
+          label: 'Power Racks',
+          icon: Icons.fitness_center_rounded,
+          statusLabel: 'Issue',
+          statusColor: Color(0xFFFF7B6B),
+        ),
+        _MapAreaBlock(
+          left: 0.35,
+          top: 0.20,
+          width: 0.2,
+          height: 0.17,
+          label: 'Free Weights',
+          icon: Icons.sports_gymnastics_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapAreaBlock(
+          left: 0.35,
+          top: 0.42,
+          width: 0.2,
+          height: 0.16,
+          label: 'Dumbbell Racks',
+          icon: Icons.fitness_center_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapAreaBlock(
+          left: 0.35,
+          top: 0.63,
+          width: 0.2,
+          height: 0.17,
+          label: 'Benches',
+          icon: Icons.event_seat_rounded,
+          statusLabel: 'Watch',
+          statusColor: Color(0xFFF1D36B),
+        ),
+        _MapAreaBlock(
+          left: 0.64,
+          top: 0.18,
+          width: 0.22,
+          height: 0.16,
+          label: 'Treadmills',
+          icon: Icons.directions_run_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapAreaBlock(
+          left: 0.64,
+          top: 0.39,
+          width: 0.22,
+          height: 0.16,
+          label: 'Leg Press',
+          icon: Icons.airline_seat_legroom_extra_rounded,
+          statusLabel: 'Issue',
+          statusColor: Color(0xFFFF7B6B),
+        ),
+        _MapAreaBlock(
+          left: 0.64,
+          top: 0.60,
+          width: 0.22,
+          height: 0.15,
+          label: 'Chest Press',
+          icon: Icons.accessibility_new_rounded,
+          statusLabel: 'Watch',
+          statusColor: Color(0xFFF1D36B),
+        ),
+        _MapAreaBlock(
+          left: 0.64,
+          top: 0.79,
+          width: 0.22,
+          height: 0.14,
+          label: 'Studio',
+          icon: Icons.self_improvement_rounded,
+          statusLabel: 'Healthy',
+          statusColor: Color(0xFF4FBA72),
+        ),
+        _MapZoneMarker(
+          left: 0.28,
+          top: 0.18,
+          label: 'Entry Flow',
+          color: Color(0xFFF1D36B),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapAreaBlock extends StatelessWidget {
+  const _MapAreaBlock({
+    required this.left,
+    required this.top,
+    required this.width,
+    required this.height,
+    required this.label,
+    required this.icon,
+    this.statusLabel,
+    this.statusColor,
+  });
+
+  final double left;
+  final double top;
+  final double width;
+  final double height;
+  final String label;
+  final IconData icon;
+  final String? statusLabel;
+  final Color? statusColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment(
+        (left + width / 2) * 2 - 1,
+        (top + height / 2) * 2 - 1,
+      ),
+      child: FractionallySizedBox(
+        widthFactor: width,
+        heightFactor: height,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: _EglPastels.white.withValues(alpha: 0.82),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFC9D8D0)),
+          ),
+          child: Stack(
+            children: [
+              if (statusLabel != null && statusColor != null)
+                Align(
+                  alignment: Alignment.topRight,
+                  child: _MapStatusBadge(
+                    label: statusLabel!,
+                    color: statusColor!,
+                  ),
+                ),
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, color: _EglPastels.mutedInk, size: 18),
+                    const SizedBox(height: 4),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        label,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: _EglPastels.ink,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapStatusBadge extends StatelessWidget {
+  const _MapStatusBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 62),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MapTitlePill extends StatelessWidget {
+  const _MapTitlePill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.76),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: _EglPastels.white,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _MapDoorMarker extends StatelessWidget {
+  const _MapDoorMarker({
+    required this.alignment,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final Alignment alignment;
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: alignment,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: _EglPastels.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color, width: 1.5),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2954,23 +3372,40 @@ class _FilterPill extends StatelessWidget {
 }
 
 class _MapZoneMarker extends StatelessWidget {
-  const _MapZoneMarker({required this.label, required this.color});
+  const _MapZoneMarker({
+    required this.left,
+    required this.top,
+    required this.label,
+    required this.color,
+  });
 
+  final double left;
+  final double top;
   final String label;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(color: color, fontWeight: FontWeight.w800),
+    return Align(
+      alignment: Alignment(left * 2 - 1, top * 2 - 1),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.18),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(color: color, fontWeight: FontWeight.w900),
+        ),
       ),
     );
   }
