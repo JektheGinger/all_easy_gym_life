@@ -59,7 +59,9 @@ flutter:
   uses-material-design: true
 
   assets:
-    - "Project Pictures/EGL Company Logo.png"
+    - assets/egl_logo.png
+    - assets/updated_egl_logo.png
+    - assets/gym_map.png
     - assets/config/app.env
     - assets/config/app.env.example
 

@@ -611,7 +611,7 @@ class _EglLogoMark extends StatelessWidget {
         child: AspectRatio(
           aspectRatio: 562 / 390,
           child: Image.asset(
-            'Project Pictures/EGL Company Logo.png',
+            'assets/updated_egl_logo.png',
             fit: BoxFit.contain,
           ),
         ),
